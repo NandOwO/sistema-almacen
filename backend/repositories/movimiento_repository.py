@@ -17,9 +17,9 @@ class MovimientoRepository:
         movimiento = crear_movimiento(datos)
 
         movimiento.id = datos.get("id")
-        movimiento.stock_anterior = datos.get("stock_anterior")
-        movimiento.stock_nuevo = datos.get("stock_nuevo")
-        movimiento.subtotal = datos.get("subtotal")
+        movimiento.cargar_historial(
+            datos.get("stock_anterior"), datos.get("stock_nuevo"), datos.get("subtotal")
+        )
         movimiento.id_usuario = datos.get("id_usuario")
         movimiento.fecha = datos.get("fecha")
         movimiento.producto_nombre = datos.get("producto")

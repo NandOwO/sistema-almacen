@@ -1,11 +1,15 @@
 from exceptions.errores import DatosInvalidosError, StockInsuficienteError
+from models.base import ModeloBase
 
 TIPO_ENTRADA = "ENTRADA"
 TIPO_SALIDA = "SALIDA"
 TIPO_AJUSTE = "AJUSTE"
 TIPOS_VALIDOS = (TIPO_ENTRADA, TIPO_SALIDA, TIPO_AJUSTE)
 
-class Movimiento:
+
+class Movimiento(ModeloBase):
+    """Entrada, salida o ajuste de stock de un producto."""
+
     def __init__(
         self,
         id,
@@ -28,17 +32,17 @@ class Movimiento:
     ):
         self.id = id
         self.id_producto = id_producto
-        self.cantidad = cantidad
-        self.tipo_movimiento = (tipo_movimiento or TIPO_ENTRADA).upper()
+        self._tipo_movimiento = self._normalizar_tipo(tipo_movimiento)
+        self._cantidad = self._normalizar_cantidad(cantidad, self._tipo_movimiento)
         self.motivo = (motivo or "").strip().upper() or "COMPRA"
         self.id_proveedor = id_proveedor
         self.numero_documento = numero_documento
         self.observacion = observacion
         self.precio_compra = precio_compra
         self.id_usuario = id_usuario
-        self.stock_anterior = stock_anterior
-        self.stock_nuevo = stock_nuevo
-        self.subtotal = subtotal
+        self._stock_anterior = stock_anterior
+        self._stock_nuevo = stock_nuevo
+        self._subtotal = subtotal
         self.fecha = fecha
 
         self.producto_nombre = producto_nombre
@@ -46,41 +50,81 @@ class Movimiento:
         self.usuario_nombre = usuario_nombre
         self.validar()
 
-    def validar(self):
-        if not self.id_producto:
-            raise DatosInvalidosError("Debe seleccionar un producto.")
-        if self.tipo_movimiento not in TIPOS_VALIDOS:
+    @staticmethod
+    def _normalizar_tipo(tipo):
+        tipo = (tipo or TIPO_ENTRADA).upper()
+        if tipo not in TIPOS_VALIDOS:
             raise DatosInvalidosError(
                 "Tipo de movimiento inválido (use ENTRADA, SALIDA o AJUSTE)."
             )
-        if self.cantidad is None or int(self.cantidad) < 0:
+        return tipo
+
+    @staticmethod
+    def _normalizar_cantidad(cantidad, tipo):
+        try:
+            cantidad = int(cantidad)
+        except (TypeError, ValueError):
+            raise DatosInvalidosError("La cantidad debe ser un número entero.")
+        if cantidad < 0:
             raise DatosInvalidosError("La cantidad no puede ser negativa.")
-        if self.tipo_movimiento != TIPO_AJUSTE and int(self.cantidad) <= 0:
+        if tipo != TIPO_AJUSTE and cantidad == 0:
             raise DatosInvalidosError("La cantidad debe ser mayor que cero.")
+        return cantidad
+
+    @property
+    def tipo_movimiento(self):
+        return self._tipo_movimiento
+
+    @property
+    def cantidad(self):
+        return self._cantidad
+
+    @property
+    def stock_anterior(self):
+        return self._stock_anterior
+
+    @property
+    def stock_nuevo(self):
+        return self._stock_nuevo
+
+    @property
+    def subtotal(self):
+        return self._subtotal
+
+    def validar(self):
+        if not self.id_producto:
+            raise DatosInvalidosError("Debe seleccionar un producto.")
+
+    def cargar_historial(self, stock_anterior, stock_nuevo, subtotal):
+        """Restaura los valores calculados de un movimiento ya registrado."""
+        self._stock_anterior = stock_anterior
+        self._stock_nuevo = stock_nuevo
+        self._subtotal = subtotal
 
     def aplicar_a_stock(self, stock_anterior):
+        """Calcula el stock resultante y el subtotal; impide stock negativo."""
         stock_anterior = int(stock_anterior)
-        if self.tipo_movimiento == TIPO_ENTRADA:
-            stock_nuevo = stock_anterior + int(self.cantidad)
-        elif self.tipo_movimiento == TIPO_SALIDA:
-            stock_nuevo = stock_anterior - int(self.cantidad)
+        if self._tipo_movimiento == TIPO_ENTRADA:
+            stock_nuevo = stock_anterior + self._cantidad
+        elif self._tipo_movimiento == TIPO_SALIDA:
+            stock_nuevo = stock_anterior - self._cantidad
             if stock_nuevo < 0:
                 raise StockInsuficienteError(
                     f"No hay stock suficiente. Disponible: {stock_anterior}, "
                     f"solicitado: {self.cantidad}."
                 )
         else:
-            stock_nuevo = int(self.cantidad)
+            stock_nuevo = self._cantidad
 
-        self.stock_anterior = stock_anterior
-        self.stock_nuevo = stock_nuevo
-        self.subtotal = self._calcular_subtotal()
+        self._stock_anterior = stock_anterior
+        self._stock_nuevo = stock_nuevo
+        self._subtotal = self._calcular_subtotal()
         return stock_nuevo
 
     def _calcular_subtotal(self):
         if self.precio_compra is None:
             return None
-        return round(float(self.precio_compra) * int(self.cantidad), 2)
+        return round(float(self.precio_compra) * self._cantidad, 2)
 
     def to_dict(self):
         return {
@@ -108,6 +152,7 @@ class Movimiento:
                 else self.fecha
             ),
         }
+
 
 def crear_movimiento(datos):
     precio = datos.get("precio_compra")

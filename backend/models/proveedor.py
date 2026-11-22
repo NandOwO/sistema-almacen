@@ -1,8 +1,10 @@
 import validadores
+from models.base import ModeloBase
 
 LONGITUD_RUC = 11
 
-class Proveedor:
+
+class Proveedor(ModeloBase):
     def __init__(
         self,
         id_proveedor,
@@ -53,6 +55,7 @@ class Proveedor:
                 else self.fecha_registro
             ),
         }
+
 
 def crear_proveedor(datos):
     return Proveedor(

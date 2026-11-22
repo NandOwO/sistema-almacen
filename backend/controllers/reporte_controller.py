@@ -5,7 +5,8 @@ from flask import jsonify, send_file
 
 from services.inventario_service import InventarioService
 from services.movimiento_service import MovimientoService
-from services import reportes_service, exportacion_service
+from services import reportes_service
+from services.exportacion_service import ExportacionService
 from exceptions.errores import DatosInvalidosError
 
 COLUMNAS = {
@@ -55,6 +56,7 @@ class ReporteController:
     def __init__(self):
         self.inventario = InventarioService()
         self.movimientos = MovimientoService()
+        self.exportacion = ExportacionService()
 
     def resumen(self):
         productos = self.inventario.listar_productos(solo_activos=True)
@@ -120,18 +122,15 @@ class ReporteController:
         return reportes_service.prediccion_reposicion(productos, salidas, ventana, cobertura)
 
     def exportar(self, reporte, formato, filtros):
+        self.exportacion.obtener_estrategia(formato)
         titulo, tablas = self._tablas(reporte, filtros)
-        if formato == "excel":
-            archivo = exportacion_service.generar_excel(tablas)
-            return self._enviar(archivo, f"{reporte}.xlsx",
-                                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-        if formato == "pdf":
-            archivo = exportacion_service.generar_pdf(titulo, tablas)
-            return self._enviar(archivo, f"{reporte}.pdf", "application/pdf")
-        raise DatosInvalidosError("Formato inválido (use 'excel' o 'pdf').")
-
-    def _enviar(self, archivo, nombre, mimetype):
-        return send_file(archivo, mimetype=mimetype, as_attachment=True, download_name=nombre)
+        archivo = self.exportacion.exportar(formato, reporte, titulo, tablas)
+        return send_file(
+            archivo.contenido,
+            mimetype=archivo.tipo_mime,
+            as_attachment=True,
+            download_name=archivo.nombre,
+        )
 
     def _tablas(self, reporte, filtros):
         if reporte == "valorizado":

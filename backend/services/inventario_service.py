@@ -1,5 +1,5 @@
 import validadores
-from models.producto import crear_producto
+from patterns.fabrica_producto import crear_producto
 from repositories.producto_repository import ProductoRepository
 from repositories.categoria_repository import CategoriaRepository
 from exceptions.errores import ProductoNoEncontradoError, DatosInvalidosError
