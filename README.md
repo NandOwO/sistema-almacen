@@ -56,14 +56,20 @@ Aplicación web de gestión de inventario desarrollada como proyecto de **Progra
    pip install -r requirements.txt
    ```
 
-5. **Arrancar el servidor**:
+5. **Ejecutar las pruebas** (desde la raíz del proyecto):
+
+   ```powershell
+   pytest
+   ```
+
+6. **Arrancar el servidor**:
 
    ```powershell
    cd backend
    python app.py
    ```
 
-6. Abrir **http://localhost:5000** e iniciar sesión:
+7. Abrir **http://localhost:5000** e iniciar sesión:
 
    | Usuario | Clave |
    |---|---|
@@ -77,6 +83,9 @@ Aplicación web de gestión de inventario desarrollada como proyecto de **Progra
 SistemaInventario/
 ├── schema.sql               # Estructura de la base de datos
 ├── requirements.txt
+├── pyproject.toml           # Configuración de pytest
+├── data/                    # Archivos CSV/JSON de ejemplo
+├── tests/                   # Pruebas unitarias (pytest)
 ├── backend/
 │   ├── app.py               # Punto de entrada (Flask)
 │   ├── config.py            # Configuración (lee .env)
@@ -84,6 +93,7 @@ SistemaInventario/
 │   ├── validadores.py       # Validaciones reutilizables
 │   ├── seed_data.py         # Datos iniciales
 │   ├── models/              # POO: entidades y reglas propias
+│   ├── patterns/            # Patrones de diseño
 │   ├── repositories/        # Acceso a MySQL (SQL)
 │   ├── services/            # Reglas de negocio
 │   ├── controllers/         # Petición HTTP → service → JSON

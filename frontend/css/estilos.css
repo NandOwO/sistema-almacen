@@ -460,7 +460,6 @@ body.sidebar-oculto .sidebar {
     }
 }
 
-/* Patrón +: botón que expande las columnas ocultas en móvil */
 .btn-expandir {
     display: none;
     align-items: center;

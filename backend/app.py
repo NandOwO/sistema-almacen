@@ -3,23 +3,24 @@ import logging
 from flask import Flask, jsonify, send_from_directory
 
 from config import FRONTEND_DIR, PUERTO, SECRET_KEY
+from exceptions.errores import InventarioError
+from routes.auth_routes import auth_bp
+from routes.categoria_routes import categoria_bp
+from routes.modulo_routes import modulo_bp
+from routes.movimiento_routes import movimiento_bp
+from routes.perfil_routes import perfil_bp
+from routes.producto_routes import producto_bp
+from routes.proveedor_routes import proveedor_bp
+from routes.reporte_routes import reporte_bp
+from routes.usuario_routes import usuario_bp
+from seed_data import sembrar_datos_si_vacio
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 logger = logging.getLogger("inventario")
-from routes.auth_routes import auth_bp
-from routes.modulo_routes import modulo_bp
-from routes.perfil_routes import perfil_bp
-from routes.usuario_routes import usuario_bp
-from routes.producto_routes import producto_bp
-from routes.reporte_routes import reporte_bp
-from routes.categoria_routes import categoria_bp
-from routes.proveedor_routes import proveedor_bp
-from routes.movimiento_routes import movimiento_bp
-from exceptions.errores import InventarioError
-from seed_data import sembrar_datos_si_vacio
+
 
 def crear_app():
     app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path="")
@@ -46,16 +47,15 @@ def crear_app():
 
     @app.errorhandler(InventarioError)
     def manejar_error_dominio(error):
-
         return jsonify({"error": str(error)}), error.codigo_http
 
     @app.errorhandler(Exception)
     def error_inesperado(error):
-
         logger.error("Error no controlado", exc_info=True)
         return jsonify({"error": "Ocurrió un error interno. Inténtalo de nuevo más tarde."}), 500
 
     return app
+
 
 if __name__ == "__main__":
     aplicacion = crear_app()

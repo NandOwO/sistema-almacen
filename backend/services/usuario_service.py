@@ -9,7 +9,6 @@ from exceptions.errores import (
 )
 
 LONGITUD_MINIMA_CLAVE = 4
-# Un perfil es "administrador" si puede gestionar usuarios o perfiles.
 RUTAS_ADMIN = ("usuarios", "perfiles")
 
 class UsuarioService:

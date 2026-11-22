@@ -33,8 +33,6 @@ class InventarioService:
         actual = self.obtener_producto(id)
         datos = dict(datos)
         datos["id"] = id
-        # Solo se exige fecha futura si el usuario la cambio (no bloquea editar
-        # un producto que ya estaba vencido).
         nueva_fecha = datos.get("fecha_vencimiento")
         if nueva_fecha and nueva_fecha != getattr(actual, "fecha_vencimiento", None):
             validadores.fecha_no_pasada(nueva_fecha)
