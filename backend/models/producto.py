@@ -2,8 +2,22 @@ from datetime import date
 
 import validadores
 from exceptions.errores import DatosInvalidosError
+from models.base import ESTADOS_VALIDOS, ModeloBase
 
-class Producto:
+
+def _entero_no_negativo(valor, mensaje):
+    try:
+        numero = int(valor)
+    except (TypeError, ValueError):
+        raise DatosInvalidosError(mensaje)
+    if numero < 0:
+        raise DatosInvalidosError(mensaje)
+    return numero
+
+
+class Producto(ModeloBase):
+    """Producto del catálogo con stock, precio y umbral de reposición."""
+
     def __init__(
         self,
         id,
@@ -22,19 +36,68 @@ class Producto:
         self.cantidad = cantidad
         self.precio = precio
         self.stock_minimo = stock_minimo
-        self.estado = int(estado)
-        self.validar()
+        self.estado = estado
 
-    def validar(self):
-        self.nombre = validadores.texto_general(self.nombre, "Nombre del producto", maximo=120)
-        if not self.categoria_id:
+    @property
+    def nombre(self):
+        return self._nombre
+
+    @nombre.setter
+    def nombre(self, valor):
+        self._nombre = validadores.texto_general(valor, "Nombre del producto", maximo=120)
+
+    @property
+    def categoria_id(self):
+        return self._categoria_id
+
+    @categoria_id.setter
+    def categoria_id(self, valor):
+        if not valor:
             raise DatosInvalidosError("Debe seleccionar una categoría.")
-        if self.cantidad < 0:
-            raise DatosInvalidosError("La cantidad no puede ser negativa.")
-        if self.precio < 0:
+        self._categoria_id = int(valor)
+
+    @property
+    def cantidad(self):
+        return self._cantidad
+
+    @cantidad.setter
+    def cantidad(self, valor):
+        self._cantidad = _entero_no_negativo(valor, "La cantidad no puede ser negativa.")
+
+    @property
+    def precio(self):
+        return self._precio
+
+    @precio.setter
+    def precio(self, valor):
+        try:
+            precio = float(valor)
+        except (TypeError, ValueError):
+            raise DatosInvalidosError("El precio debe ser un número.")
+        if precio < 0:
             raise DatosInvalidosError("El precio no puede ser negativo.")
-        if self.stock_minimo < 0:
-            raise DatosInvalidosError("El stock mínimo no puede ser negativo.")
+        self._precio = precio
+
+    @property
+    def stock_minimo(self):
+        return self._stock_minimo
+
+    @stock_minimo.setter
+    def stock_minimo(self, valor):
+        self._stock_minimo = _entero_no_negativo(
+            valor, "El stock mínimo no puede ser negativo."
+        )
+
+    @property
+    def estado(self):
+        return self._estado
+
+    @estado.setter
+    def estado(self, valor):
+        estado = int(valor)
+        if estado not in ESTADOS_VALIDOS:
+            raise DatosInvalidosError("Estado inválido.")
+        self._estado = estado
 
     @property
     def tipo(self):
@@ -46,11 +109,11 @@ class Producto:
 
     @property
     def valor_total(self):
-        return round(self.cantidad * self.precio, 2)
+        return round(self._cantidad * self._precio, 2)
 
     @property
     def necesita_reposicion(self):
-        return self.cantidad <= self.stock_minimo
+        return self._cantidad <= self._stock_minimo
 
     def to_dict(self):
         return {
@@ -67,24 +130,21 @@ class Producto:
             "necesita_reposicion": self.necesita_reposicion,
         }
 
+
 class ProductoPerecedero(Producto):
-    def __init__(
-        self,
-        id,
-        nombre,
-        categoria_id,
-        cantidad,
-        precio,
-        stock_minimo=5,
-        categoria_nombre=None,
-        estado=1,
-        fecha_vencimiento=None,
-    ):
+    """Producto con fecha de vencimiento."""
+
+    def __init__(self, *args, fecha_vencimiento=None, **kwargs):
+        super().__init__(*args, **kwargs)
         self.fecha_vencimiento = fecha_vencimiento
-        super().__init__(
-            id, nombre, categoria_id, cantidad, precio, stock_minimo,
-            categoria_nombre, estado,
-        )
+
+    @property
+    def fecha_vencimiento(self):
+        return self._fecha_vencimiento
+
+    @fecha_vencimiento.setter
+    def fecha_vencimiento(self, valor):
+        self._fecha_vencimiento = validadores.fecha_valida(valor, "Fecha de vencimiento")
 
     @property
     def tipo(self):
@@ -92,31 +152,12 @@ class ProductoPerecedero(Producto):
 
     @property
     def esta_vencido(self):
-        if not self.fecha_vencimiento:
+        if not self._fecha_vencimiento:
             return False
-        try:
-            return date.fromisoformat(self.fecha_vencimiento) < date.today()
-        except ValueError:
-            return False
+        return date.fromisoformat(self._fecha_vencimiento) < date.today()
 
     def to_dict(self):
         datos = super().to_dict()
         datos["fecha_vencimiento"] = self.fecha_vencimiento
         datos["esta_vencido"] = self.esta_vencido
         return datos
-
-def crear_producto(datos):
-    comunes = dict(
-        id=datos.get("id"),
-        nombre=datos.get("nombre"),
-        categoria_id=int(datos["categoria_id"]) if datos.get("categoria_id") else None,
-        categoria_nombre=datos.get("categoria") or datos.get("categoria_nombre"),
-        cantidad=int(datos.get("cantidad", 0)),
-        precio=float(datos.get("precio", 0)),
-        stock_minimo=int(datos.get("stock_minimo", 5)),
-        estado=int(datos.get("estado", 1)),
-    )
-    fecha = validadores.fecha_valida(datos.get("fecha_vencimiento"), "Fecha de vencimiento")
-    if fecha:
-        return ProductoPerecedero(fecha_vencimiento=fecha, **comunes)
-    return Producto(**comunes)

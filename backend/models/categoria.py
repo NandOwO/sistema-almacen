@@ -1,6 +1,8 @@
 import validadores
+from models.base import ModeloBase
 
-class Categoria:
+
+class Categoria(ModeloBase):
     def __init__(self, id, nombre, descripcion=None, estado=1):
         self.id = id
         self.nombre = nombre
@@ -18,6 +20,7 @@ class Categoria:
             "descripcion": self.descripcion,
             "estado": self.estado,
         }
+
 
 def crear_categoria(datos):
     return Categoria(

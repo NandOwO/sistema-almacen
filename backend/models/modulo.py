@@ -1,4 +1,7 @@
-class Modulo:
+from models.base import ModeloBase
+
+
+class Modulo(ModeloBase):
     def __init__(self, id_modulo, nombre, icono, ruta, orden=0, estado=1):
         self.id_modulo = id_modulo
         self.nombre = nombre
@@ -15,6 +18,7 @@ class Modulo:
             "ruta": self.ruta,
             "orden": self.orden,
         }
+
 
 def crear_modulo(datos):
     return Modulo(

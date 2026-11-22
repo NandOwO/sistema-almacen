@@ -1,5 +1,5 @@
 from repositories.database import get_connection
-from models.producto import crear_producto
+from patterns.fabrica_producto import crear_producto
 
 SELECT_BASE = (
     "SELECT p.*, c.nombre AS categoria "

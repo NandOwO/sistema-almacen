@@ -1,6 +1,8 @@
 import validadores
+from models.base import ModeloBase
 
-class Perfil:
+
+class Perfil(ModeloBase):
     def __init__(self, id_perfil, nombre, descripcion=None, modulos=None, estado=1):
         self.id_perfil = id_perfil
         self.nombre = nombre
@@ -24,6 +26,7 @@ class Perfil:
             "estado": self.estado,
             "modulos": self.modulos,
         }
+
 
 def crear_perfil(datos):
     return Perfil(

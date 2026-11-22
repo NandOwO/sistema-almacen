@@ -1,6 +1,8 @@
 import validadores
+from models.base import ModeloBase
 
-class Usuario:
+
+class Usuario(ModeloBase):
     def __init__(
         self,
         id_usuario,
@@ -43,6 +45,7 @@ class Usuario:
             "perfil": self.perfil_nombre,
             "estado": self.estado,
         }
+
 
 def crear_usuario(datos):
     return Usuario(
