@@ -62,7 +62,6 @@ export function primerError(errores) {
 const PREFIJOS_RUC = ["10", "15", "16", "17", "20"];
 const PESOS_RUC = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];
 
-/* RUC peruano: 11 digitos, prefijo valido y digito verificador (modulo 11). */
 export function ruc(valor, { obligatorio = false } = {}) {
     valor = (valor || "").trim();
     if (!valor) return obligatorio ? "El RUC es obligatorio." : null;
@@ -113,7 +112,6 @@ export function filtrarEntrada(input, tipo) {
     });
 }
 
-/* Campos numericos: impide teclear letras, signos (e, +, -) y pegar texto invalido. */
 export function soloNumero(input, permitirDecimal = false) {
     if (!input) return;
     const bloqueadas = permitirDecimal

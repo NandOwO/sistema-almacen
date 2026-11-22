@@ -4,7 +4,6 @@ from repositories.modulo_repository import ModuloRepository
 from exceptions.errores import PerfilNoEncontradoError, DatosInvalidosError
 
 RUTA_GESTION = "perfiles"
-# Un perfil es "administrador" si puede gestionar usuarios o perfiles.
 RUTAS_ADMIN = ("usuarios", "perfiles")
 
 class PerfilService:
