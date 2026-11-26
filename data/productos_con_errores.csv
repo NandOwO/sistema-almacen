@@ -1,0 +1,11 @@
+nombre,categoria,cantidad,precio,stock_minimo,fecha_vencimiento
+Parlante portátil,Tecnología,10,120.00,3,
+,Tecnología,5,10.00,2,
+Tijera escolar,Papelería,-4,3.50,10,
+Goma en barra,Papelería,20,abc,5,
+Pan de molde,Alimentos,15,6.90,5,2020-01-01
+Lámpara LED,Iluminación,8,25.00,2,
+Parlante portátil,Tecnología,3,120.00,1,
+Cartulina blanca,Papelería,12.5,0.60,30,
+Esponja multiuso,Limpieza,60,1.20,,
+Mouse inalámbrico,Tecnología,10,60.00,5,

@@ -1,7 +1,9 @@
 from collections import namedtuple
 
 from exceptions.errores import DatosInvalidosError
-from patterns.estrategias_exportacion import ExportacionExcel, ExportacionPDF
+from patterns.estrategias_exportacion import (
+    ExportacionCSV, ExportacionExcel, ExportacionJSON, ExportacionPDF,
+)
 
 ArchivoExportado = namedtuple("ArchivoExportado", "contenido nombre tipo_mime")
 
@@ -13,6 +15,8 @@ class ExportacionService:
         self._estrategias = estrategias or {
             "excel": ExportacionExcel(),
             "pdf": ExportacionPDF(),
+            "csv": ExportacionCSV(),
+            "json": ExportacionJSON(),
         }
 
     @property

@@ -1,8 +1,9 @@
 import logging
 
 from flask import Flask, jsonify, send_from_directory
+from werkzeug.exceptions import HTTPException
 
-from config import FRONTEND_DIR, PUERTO, SECRET_KEY
+from config import FRONTEND_DIR, PUERTO, SECRET_KEY, TAMANO_MAXIMO_ARCHIVO
 from exceptions.errores import InventarioError
 from routes.auth_routes import auth_bp
 from routes.categoria_routes import categoria_bp
@@ -25,6 +26,7 @@ logger = logging.getLogger("inventario")
 def crear_app():
     app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path="")
     app.secret_key = SECRET_KEY
+    app.config["MAX_CONTENT_LENGTH"] = TAMANO_MAXIMO_ARCHIVO
 
     try:
         sembrar_datos_si_vacio()
@@ -48,6 +50,15 @@ def crear_app():
     @app.errorhandler(InventarioError)
     def manejar_error_dominio(error):
         return jsonify({"error": str(error)}), error.codigo_http
+
+    @app.errorhandler(413)
+    def archivo_muy_grande(error):
+        limite = TAMANO_MAXIMO_ARCHIVO // (1024 * 1024)
+        return jsonify({"error": f"El archivo supera el límite de {limite} MB."}), 413
+
+    @app.errorhandler(HTTPException)
+    def error_http(error):
+        return jsonify({"error": error.description}), error.code
 
     @app.errorhandler(Exception)
     def error_inesperado(error):

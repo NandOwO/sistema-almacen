@@ -1,0 +1,16 @@
+nombre,categoria,cantidad,precio,stock_minimo,fecha_vencimiento
+Audífonos Bluetooth,Tecnología,18,85.90,6,
+Memoria USB 64GB,Tecnología,40,29.50,10,
+Disco SSD 1TB,Tecnología,9,320.00,4,
+Cable HDMI 2m,Tecnología,25,18.00,8,
+Folder manila A4,Papelería,200,0.80,50,
+Plumón indeleble,Papelería,60,3.20,20,
+Engrapador metálico,Papelería,15,24.90,5,
+Post-it 76x76,Papelería,80,6.50,25,
+Yogurt natural 1L,Alimentos,30,7.40,10,2027-02-15
+Avena 900g,Alimentos,45,9.90,15,2027-08-30
+Atún en lata,Alimentos,120,6.20,30,2028-03-10
+Galletas de soda,Alimentos,70,2.50,20,2027-05-20
+Lejía 1L,Limpieza,50,4.30,15,
+Escoba de cerdas,Limpieza,12,16.00,4,
+Papel toalla x2,Limpieza,35,8.70,10,
