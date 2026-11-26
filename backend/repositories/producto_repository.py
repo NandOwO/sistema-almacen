@@ -6,7 +6,10 @@ SELECT_BASE = (
     "FROM productos p JOIN categorias c ON p.categoria_id = c.id"
 )
 
+
 class ProductoRepository:
+    """Acceso a datos de productos en MySQL."""
+
     def _fila_a_producto(self, fila):
         datos = dict(fila)
         if datos.get("fecha_vencimiento"):
@@ -14,6 +17,7 @@ class ProductoRepository:
         return crear_producto(datos)
 
     def listar(self, solo_activos=False):
+        """Lista los productos no eliminados; con solo_activos=True, solo los activos."""
         conn = get_connection()
         try:
             cursor = conn.cursor(dictionary=True)
@@ -39,6 +43,7 @@ class ProductoRepository:
             conn.close()
 
     def obtener(self, id):
+        """Busca un producto por id; devuelve None si no existe."""
         conn = get_connection()
         try:
             cursor = conn.cursor(dictionary=True)
@@ -50,6 +55,7 @@ class ProductoRepository:
             conn.close()
 
     def agregar(self, producto):
+        """Inserta el producto y le asigna el id generado."""
         conn = get_connection()
         try:
             cursor = conn.cursor()
@@ -74,6 +80,7 @@ class ProductoRepository:
             conn.close()
 
     def actualizar(self, producto):
+        """Actualiza el producto en la base de datos."""
         conn = get_connection()
         try:
             cursor = conn.cursor()
@@ -99,9 +106,11 @@ class ProductoRepository:
             conn.close()
 
     def eliminar(self, id):
+        """Marca el producto como eliminado (eliminación lógica)."""
         self.cambiar_estado(id, 2)
 
     def cambiar_estado(self, id, estado):
+        """Actualiza el estado (0 inactivo, 1 activo, 2 eliminado)."""
         conn = get_connection()
         try:
             cursor = conn.cursor()

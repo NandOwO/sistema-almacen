@@ -24,10 +24,12 @@ class EstrategiaExportacion(ABC):
 
 
 class ExportacionExcel(EstrategiaExportacion):
+    """Estrategia concreta: libro .xlsx con una hoja por tabla."""
     extension = "xlsx"
     tipo_mime = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
     def exportar(self, titulo, tablas):
+        """Escribe cada tabla en su hoja y ajusta el ancho de las columnas."""
         buffer = io.BytesIO()
         with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
             for nombre, df in tablas:
@@ -46,10 +48,12 @@ class ExportacionExcel(EstrategiaExportacion):
 
 
 class ExportacionPDF(EstrategiaExportacion):
+    """Estrategia concreta: documento PDF horizontal con tablas."""
     extension = "pdf"
     tipo_mime = "application/pdf"
 
     def exportar(self, titulo, tablas):
+        """Dibuja el título y cada tabla con sus encabezados."""
         pdf = FPDF(orientation="L", unit="mm", format="A4")
         pdf.set_auto_page_break(auto=True, margin=12)
         pdf.add_page()
@@ -109,10 +113,12 @@ class ExportacionPDF(EstrategiaExportacion):
 
 
 class ExportacionCSV(EstrategiaExportacion):
+    """Estrategia concreta: CSV en UTF-8 con BOM, una sección por tabla."""
     extension = "csv"
     tipo_mime = "text/csv"
 
     def exportar(self, titulo, tablas):
+        """Escribe las tablas separadas por una línea con su subtítulo."""
         texto = io.StringIO()
         for i, (subtitulo, df) in enumerate(tablas):
             if i:
@@ -124,10 +130,12 @@ class ExportacionCSV(EstrategiaExportacion):
 
 
 class ExportacionJSON(EstrategiaExportacion):
+    """Estrategia concreta: documento JSON con los registros de cada tabla."""
     extension = "json"
     tipo_mime = "application/json"
 
     def exportar(self, titulo, tablas):
+        """Serializa las tablas con valores vacíos como null."""
         documento = {
             "titulo": titulo,
             "tablas": {

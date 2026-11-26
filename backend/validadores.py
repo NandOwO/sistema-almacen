@@ -11,9 +11,10 @@ PATRON_DIGITOS = re.compile(r"^\d+$")
 CARACTERES_PROHIBIDOS = set("<>{}[]\\|^~`$%")
 LONGITUD_MINIMA_TEXTO = 2
 
+
 def texto_general(valor, campo, minimo=LONGITUD_MINIMA_TEXTO, maximo=150):
-    """Nombres descriptivos: admite letras, numeros y signos comunes, pero
-    rechaza caracteres peligrosos y nombres demasiado cortos."""
+    """Nombre descriptivo: admite letras, números y signos comunes; rechaza
+    caracteres peligrosos y textos demasiado cortos o largos."""
     valor = " ".join((valor or "").split())
     if not valor:
         raise DatosInvalidosError(f"El campo '{campo}' es obligatorio.")
@@ -29,7 +30,9 @@ def texto_general(valor, campo, minimo=LONGITUD_MINIMA_TEXTO, maximo=150):
         )
     return valor
 
+
 def texto_requerido(valor, campo, maximo=150):
+    """Texto obligatorio con longitud máxima."""
     valor = (valor or "").strip()
     if not valor:
         raise DatosInvalidosError(f"El campo '{campo}' es obligatorio.")
@@ -37,7 +40,9 @@ def texto_requerido(valor, campo, maximo=150):
         raise DatosInvalidosError(f"El campo '{campo}' supera los {maximo} caracteres.")
     return valor
 
+
 def texto_sin_simbolos(valor, campo, obligatorio=True, maximo=150):
+    """Texto que solo admite letras, espacios y signos de puntuación básicos."""
     valor = (valor or "").strip()
     if not valor:
         if obligatorio:
@@ -51,7 +56,9 @@ def texto_sin_simbolos(valor, campo, obligatorio=True, maximo=150):
         )
     return valor
 
+
 def usuario_valido(valor):
+    """Nombre de usuario de al menos 3 caracteres, sin espacios."""
     valor = (valor or "").strip()
     if len(valor) < 3:
         raise DatosInvalidosError("El usuario debe tener al menos 3 caracteres.")
@@ -61,7 +68,9 @@ def usuario_valido(valor):
         )
     return valor
 
+
 def correo_valido(valor, obligatorio=False):
+    """Correo con formato nombre@dominio.ext; opcional por defecto."""
     valor = (valor or "").strip()
     if not valor:
         if obligatorio:
@@ -71,7 +80,9 @@ def correo_valido(valor, obligatorio=False):
         raise DatosInvalidosError("El correo no tiene un formato válido.")
     return valor
 
+
 def solo_digitos(valor, campo, longitud=None, obligatorio=False):
+    """Cadena numérica con longitud opcional fija."""
     valor = (valor or "").strip()
     if not valor:
         if obligatorio:
@@ -83,12 +94,14 @@ def solo_digitos(valor, campo, longitud=None, obligatorio=False):
         raise DatosInvalidosError(f"El campo '{campo}' debe tener {longitud} dígitos.")
     return valor
 
+
 PREFIJOS_RUC = ("10", "15", "16", "17", "20")
 PESOS_RUC = (5, 4, 3, 2, 7, 6, 5, 4, 3, 2)
 LONGITUD_TELEFONO = 9
 
+
 def ruc_valido(valor, obligatorio=False):
-    """RUC peruano: 11 digitos, prefijo valido y digito verificador (modulo 11)."""
+    """RUC peruano: 11 dígitos, prefijo válido y dígito verificador (módulo 11)."""
     valor = (valor or "").strip()
     if not valor:
         if obligatorio:
@@ -110,7 +123,9 @@ def ruc_valido(valor, obligatorio=False):
         raise DatosInvalidosError("El RUC no es válido (dígito verificador incorrecto).")
     return valor
 
+
 def telefono_valido(valor, obligatorio=False):
+    """Teléfono de 9 dígitos; opcional por defecto."""
     valor = (valor or "").strip()
     if not valor:
         if obligatorio:
@@ -124,7 +139,9 @@ def telefono_valido(valor, obligatorio=False):
         )
     return valor
 
+
 def fecha_valida(valor, campo="Fecha", obligatorio=False):
+    """Fecha AAAA-MM-DD entre los años 2000 y 2100; devuelve la fecha normalizada."""
     if valor is None or (isinstance(valor, str) and not valor.strip()):
         if obligatorio:
             raise DatosInvalidosError(f"El campo '{campo}' es obligatorio.")
@@ -138,6 +155,7 @@ def fecha_valida(valor, campo="Fecha", obligatorio=False):
     if fecha.year < 2000 or fecha.year > 2100:
         raise DatosInvalidosError(f"El campo '{campo}' está fuera de un rango válido.")
     return fecha.isoformat()
+
 
 def fecha_no_pasada(valor, campo="Fecha de vencimiento"):
     """Valida que la fecha no sea anterior a hoy (para datos que ingresa el usuario)."""

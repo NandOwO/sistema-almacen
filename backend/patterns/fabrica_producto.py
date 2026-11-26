@@ -30,12 +30,18 @@ class FabricaProducto(ABC):
 
 
 class FabricaProductoGeneral(FabricaProducto):
+    """Fábrica concreta de productos sin vencimiento."""
+
     def crear(self, atributos, datos):
+        """Instancia un Producto."""
         return Producto(**atributos)
 
 
 class FabricaProductoPerecedero(FabricaProducto):
+    """Fábrica concreta de productos con fecha de vencimiento."""
+
     def crear(self, atributos, datos):
+        """Instancia un ProductoPerecedero con su fecha de vencimiento."""
         return ProductoPerecedero(
             fecha_vencimiento=datos.get("fecha_vencimiento"), **atributos
         )
@@ -52,4 +58,5 @@ def obtener_fabrica(datos):
 
 
 def crear_producto(datos):
+    """Punto de entrada: elige la fábrica y construye el producto."""
     return obtener_fabrica(datos).construir(datos)

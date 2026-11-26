@@ -3,11 +3,15 @@ from werkzeug.security import check_password_hash
 from repositories.usuario_repository import UsuarioRepository
 from exceptions.errores import CredencialesInvalidasError
 
+
 class AuthService:
+    """Autenticación de usuarios con contraseña hasheada."""
+
     def __init__(self, repositorio=None):
         self.repositorio = repositorio or UsuarioRepository()
 
     def autenticar(self, nombre_usuario, clave):
+        """Verifica usuario, contraseña y estado; devuelve el usuario."""
         if not nombre_usuario or not clave:
             raise CredencialesInvalidasError("Usuario y clave son obligatorios.")
 
@@ -20,4 +24,5 @@ class AuthService:
         return usuario
 
     def obtener(self, id_usuario):
+        """Devuelve el usuario por id o None."""
         return self.repositorio.obtener(id_usuario)

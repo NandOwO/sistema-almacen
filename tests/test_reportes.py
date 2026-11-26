@@ -41,9 +41,12 @@ class TestAnalisisPandas:
     def test_agrupa_por_categoria_ordenado_por_valor(self, productos_muestra):
         datos = rs.analisis_pandas(productos_muestra)
         assert datos["por_categoria"] == [
-            {"categoria": "Tecnología", "productos": 2, "unidades": 15, "valor": 30180.0, "precio_promedio": 1280.0},
-            {"categoria": "Alimentos", "productos": 3, "unidades": 72, "valor": 773.1, "precio_promedio": 10.1},
-            {"categoria": "Papelería", "productos": 1, "unidades": 0, "valor": 0.0, "precio_promedio": 4.5},
+            {"categoria": "Tecnología", "productos": 2, "unidades": 15, "valor": 30180.0,
+             "precio_promedio": 1280.0},
+            {"categoria": "Alimentos", "productos": 3, "unidades": 72, "valor": 773.1,
+             "precio_promedio": 10.1},
+            {"categoria": "Papelería", "productos": 1, "unidades": 0, "valor": 0.0,
+             "precio_promedio": 4.5},
         ]
         assert datos["top_productos"][0]["nombre"] == "Laptop 14"
         assert len(datos["top_productos"]) == 5
@@ -72,15 +75,17 @@ class TestBajoStock:
 
 class TestPrediccionReposicion:
     def test_calcula_consumo_dias_y_sugerido(self, productos_muestra, salidas):
-        datos = rs.prediccion_reposicion(productos_muestra, salidas, ventana_dias=30, cobertura_dias=30)
-        filas = {f["id"]: f for f in datos["productos"]}
-
-        assert (filas[2]["consumo_diario"], filas[2]["dias_restantes"], filas[2]["sugerido"]) == (1.17, 2, 33)
-        assert filas[2]["urgencia"] == "CRÍTICO"
-        assert (filas[5]["dias_restantes"], filas[5]["sugerido"], filas[5]["urgencia"]) == (12, 35, "ATENCIÓN")
-        assert (filas[1]["dias_restantes"], filas[1]["sugerido"], filas[1]["urgencia"]) == (60, 0, "OK")
-        assert (filas[3]["dias_restantes"], filas[3]["sugerido"], filas[3]["urgencia"]) == (None, 30, "SIN STOCK")
-        assert (filas[4]["urgencia"], filas[4]["sugerido"]) == ("SIN CONSUMO", 0)
+        datos = rs.prediccion_reposicion(productos_muestra, salidas, ventana_dias=30,
+                                         cobertura_dias=30)
+        filas = {
+            f["id"]: (f["consumo_diario"], f["dias_restantes"], f["sugerido"], f["urgencia"])
+            for f in datos["productos"]
+        }
+        assert filas[2] == (1.17, 2, 33, "CRÍTICO")
+        assert filas[5] == (2.0, 12, 35, "ATENCIÓN")
+        assert filas[1] == (0.2, 60, 0, "OK")
+        assert filas[3] == (0.0, None, 30, "SIN STOCK")
+        assert filas[4] == (0.0, None, 0, "SIN CONSUMO")
 
     def test_ordena_por_dias_restantes_con_vacios_al_final(self, productos_muestra, salidas):
         datos = rs.prediccion_reposicion(productos_muestra, salidas)
@@ -113,7 +118,8 @@ class TestPrediccionReposicion:
                    for _ in range(150)]
         ventana, cobertura = 30, 21
 
-        filas = {f["id"]: f for f in rs.prediccion_reposicion(productos, salidas, ventana, cobertura)["productos"]}
+        resultado = rs.prediccion_reposicion(productos, salidas, ventana, cobertura)
+        filas = {f["id"]: f for f in resultado["productos"]}
         for p in productos:
             vendidas = sum(m.cantidad for m in salidas if m.id_producto == p.id)
             diario = round(vendidas / ventana, 2)

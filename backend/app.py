@@ -24,6 +24,7 @@ logger = logging.getLogger("inventario")
 
 
 def crear_app():
+    """Crea la aplicación Flask, siembra datos iniciales y registra rutas y errores."""
     app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path="")
     app.secret_key = SECRET_KEY
     app.config["MAX_CONTENT_LENGTH"] = TAMANO_MAXIMO_ARCHIVO
@@ -45,23 +46,28 @@ def crear_app():
 
     @app.route("/")
     def inicio():
+        """Sirve la página principal de la SPA."""
         return send_from_directory(FRONTEND_DIR, "index.html")
 
     @app.errorhandler(InventarioError)
     def manejar_error_dominio(error):
+        """Responde los errores del dominio con su código HTTP."""
         return jsonify({"error": str(error)}), error.codigo_http
 
     @app.errorhandler(413)
     def archivo_muy_grande(error):
+        """Responde 413 cuando el archivo supera el tamaño permitido."""
         limite = TAMANO_MAXIMO_ARCHIVO // (1024 * 1024)
         return jsonify({"error": f"El archivo supera el límite de {limite} MB."}), 413
 
     @app.errorhandler(HTTPException)
     def error_http(error):
+        """Responde los errores HTTP (404, 405...) en JSON."""
         return jsonify({"error": error.description}), error.code
 
     @app.errorhandler(Exception)
     def error_inesperado(error):
+        """Registra el error en el log y responde 500 sin exponer detalles."""
         logger.error("Error no controlado", exc_info=True)
         return jsonify({"error": "Ocurrió un error interno. Inténtalo de nuevo más tarde."}), 500
 

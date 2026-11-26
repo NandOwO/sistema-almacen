@@ -1,11 +1,15 @@
 from repositories.database import get_connection
 from models.modulo import crear_modulo
 
+
 class ModuloRepository:
+    """Acceso a datos de módulos en MySQL."""
+
     def _fila_a_modulo(self, fila):
         return crear_modulo(dict(fila))
 
     def listar_por_perfil(self, id_perfil):
+        """Módulos activos asignados a un perfil, en orden de menú."""
         conn = get_connection()
         try:
             cursor = conn.cursor(dictionary=True)
@@ -22,6 +26,7 @@ class ModuloRepository:
             conn.close()
 
     def listar_todos(self):
+        """Todos los módulos activos, en orden de menú."""
         conn = get_connection()
         try:
             cursor = conn.cursor(dictionary=True)
@@ -32,6 +37,7 @@ class ModuloRepository:
             conn.close()
 
     def rutas_de_perfil(self, id_perfil):
+        """Conjunto de rutas a las que un perfil tiene acceso."""
         conn = get_connection()
         try:
             cursor = conn.cursor(dictionary=True)

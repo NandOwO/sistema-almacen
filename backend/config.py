@@ -4,6 +4,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 RAIZ = os.path.dirname(BASE_DIR)
 FRONTEND_DIR = os.path.join(RAIZ, "frontend")
 
+
 def _cargar_env():
     ruta = os.path.join(RAIZ, ".env")
     if not os.path.exists(ruta):
@@ -15,6 +16,7 @@ def _cargar_env():
                 continue
             clave, valor = linea.split("=", 1)
             os.environ.setdefault(clave.strip(), valor.strip())
+
 
 _cargar_env()
 

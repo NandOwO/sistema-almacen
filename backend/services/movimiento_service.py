@@ -6,19 +6,25 @@ from exceptions.errores import ProductoNoEncontradoError, DatosInvalidosError
 
 MOTIVO_VENTA = "VENTA"
 
+
 class MovimientoService:
+    """Reglas de negocio de movimientos."""
+
     def __init__(self, repositorio=None, producto_repo=None, proveedor_repo=None):
         self.repositorio = repositorio or MovimientoRepository()
         self.producto_repo = producto_repo or ProductoRepository()
         self.proveedor_repo = proveedor_repo or ProveedorRepository()
 
     def listar_movimientos(self, limite=100):
+        """Últimos movimientos registrados."""
         return self.repositorio.listar(limite)
 
     def listar_filtrado(self, filtros):
+        """Movimientos que cumplen los filtros indicados."""
         return self.repositorio.listar_filtrado(dict(filtros or {}))
 
     def registrar_movimiento(self, datos, id_usuario):
+        """Valida las reglas de compra y venta y registra el movimiento."""
         movimiento = crear_movimiento(dict(datos))
         movimiento.id_usuario = id_usuario
 

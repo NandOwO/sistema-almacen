@@ -6,27 +6,34 @@ from exceptions.errores import PerfilNoEncontradoError, DatosInvalidosError
 RUTA_GESTION = "perfiles"
 RUTAS_ADMIN = ("usuarios", "perfiles")
 
+
 class PerfilService:
+    """Reglas de negocio de perfiles."""
+
     def __init__(self, repositorio=None, modulo_repo=None):
         self.repositorio = repositorio or PerfilRepository()
         self.modulo_repo = modulo_repo or ModuloRepository()
 
     def listar_perfiles(self, solo_activos=False):
+        """Lista los perfiles; con solo_activos=True, solo los activos."""
         return self.repositorio.listar(solo_activos)
 
     def obtener_perfil(self, id_perfil):
+        """Devuelve el perfil o lanza un error 404 si no existe."""
         perfil = self.repositorio.obtener(id_perfil)
         if perfil is None:
             raise PerfilNoEncontradoError(f"No existe el perfil con id {id_perfil}.")
         return perfil
 
     def crear_perfil(self, datos):
+        """Valida los datos y registra un perfil nuevo."""
         perfil = crear_perfil(dict(datos))
         if self.repositorio.buscar_por_nombre(perfil.nombre):
             raise DatosInvalidosError("Ya existe un perfil con ese nombre.")
         return self.repositorio.agregar(perfil)
 
     def actualizar_perfil(self, id_perfil, datos):
+        """Valida los datos y actualiza el perfil existente."""
         self.obtener_perfil(id_perfil)
         datos = dict(datos)
         datos["id_perfil"] = id_perfil
@@ -46,12 +53,14 @@ class PerfilService:
         return self.repositorio.actualizar(perfil)
 
     def eliminar_perfil(self, id_perfil):
+        """Elimina el perfil, salvo que sea administrador."""
         perfil = self.obtener_perfil(id_perfil)
         if self._es_admin(perfil):
             raise DatosInvalidosError("No puedes eliminar un perfil administrador.")
         self.repositorio.eliminar(id_perfil)
 
     def cambiar_estado_perfil(self, id_perfil, estado):
+        """Activa o desactiva el perfil; un administrador no se puede desactivar."""
         if int(estado) not in (0, 1):
             raise DatosInvalidosError("Estado inválido.")
         perfil = self.obtener_perfil(id_perfil)

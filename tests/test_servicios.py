@@ -1,6 +1,7 @@
 import pytest
 
 from exceptions.errores import DatosInvalidosError, ProductoNoEncontradoError, StockInsuficienteError
+from seed_data import PRODUCTOS, _datos_producto
 from services.inventario_service import InventarioService
 from services.movimiento_service import MovimientoService
 from tests.conftest import (
@@ -95,3 +96,15 @@ class TestMovimientoService:
         with pytest.raises(StockInsuficienteError):
             servicio_movimientos.registrar_movimiento(
                 {"id_producto": 1, "cantidad": 500, "tipo_movimiento": "SALIDA", "motivo": "MERMA"}, 1)
+
+
+def test_los_productos_de_ejemplo_pasan_las_validaciones(categoria_repo):
+    repo = ProductoRepoFalso()
+    servicio = InventarioService(repositorio=repo, categoria_repo=categoria_repo)
+    ids = {c.nombre: c.id for c in categoria_repo.listar()}
+    for fila in PRODUCTOS:
+        datos = _datos_producto(*fila)
+        datos["categoria_id"] = ids[datos.pop("categoria")]
+        servicio.crear_producto(datos)
+    assert len(repo.productos) == len(PRODUCTOS)
+    assert sum(p.tipo == "Perecedero" for p in repo.productos) == 2

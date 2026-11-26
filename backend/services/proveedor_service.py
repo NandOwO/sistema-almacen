@@ -4,15 +4,20 @@ from repositories.proveedor_repository import ProveedorRepository
 from repositories.movimiento_repository import MovimientoRepository
 from exceptions.errores import ProveedorNoEncontradoError, DatosInvalidosError
 
+
 class ProveedorService:
+    """Reglas de negocio de proveedores."""
+
     def __init__(self, repositorio=None, movimiento_repo=None):
         self.repositorio = repositorio or ProveedorRepository()
         self.movimiento_repo = movimiento_repo or MovimientoRepository()
 
     def listar_proveedores(self, solo_activos=False):
+        """Lista los proveedores; con solo_activos=True, solo los activos."""
         return self.repositorio.listar(solo_activos)
 
     def obtener_proveedor(self, id_proveedor):
+        """Devuelve el proveedor o lanza un error 404 si no existe."""
         proveedor = self.repositorio.obtener(id_proveedor)
         if proveedor is None:
             raise ProveedorNoEncontradoError(
@@ -21,6 +26,7 @@ class ProveedorService:
         return proveedor
 
     def crear_proveedor(self, datos):
+        """Valida los datos y registra un proveedor nuevo."""
         datos = dict(datos)
         self._validar_documentos(datos)
         proveedor = crear_proveedor(datos)
@@ -28,6 +34,7 @@ class ProveedorService:
         return self.repositorio.agregar(proveedor)
 
     def actualizar_proveedor(self, id_proveedor, datos):
+        """Valida los datos y actualiza el proveedor existente."""
         self.obtener_proveedor(id_proveedor)
         datos = dict(datos)
         datos["id_proveedor"] = id_proveedor
@@ -42,11 +49,13 @@ class ProveedorService:
         validadores.telefono_valido(datos.get("telefono"))
 
     def eliminar_proveedor(self, id_proveedor):
+        """Elimina el proveedor si no tiene movimientos registrados."""
         self.obtener_proveedor(id_proveedor)
         self._verificar_sin_movimientos(id_proveedor, "eliminar")
         self.repositorio.eliminar(id_proveedor)
 
     def cambiar_estado_proveedor(self, id_proveedor, estado):
+        """Activa o desactiva el proveedor; desactivar exige que no tenga movimientos."""
         if int(estado) not in (0, 1):
             raise DatosInvalidosError("Estado inválido.")
         self.obtener_proveedor(id_proveedor)

@@ -5,6 +5,8 @@ LONGITUD_RUC = 11
 
 
 class Proveedor(ModeloBase):
+    """Empresa que abastece productos, identificada por su RUC."""
+
     def __init__(
         self,
         id_proveedor,
@@ -29,6 +31,7 @@ class Proveedor(ModeloBase):
         self.validar()
 
     def validar(self):
+        """Valida y normaliza los campos del proveedor."""
         self.nombre_proveedor = validadores.texto_general(
             self.nombre_proveedor, "Nombre del proveedor", maximo=200
         )
@@ -40,6 +43,7 @@ class Proveedor(ModeloBase):
         self.correo = validadores.correo_valido(self.correo)
 
     def to_dict(self):
+        """Representación del proveedor para las respuestas JSON."""
         return {
             "id_proveedor": self.id_proveedor,
             "nombre_proveedor": self.nombre_proveedor,
@@ -58,6 +62,7 @@ class Proveedor(ModeloBase):
 
 
 def crear_proveedor(datos):
+    """Construye un proveedor a partir de un diccionario."""
     return Proveedor(
         id_proveedor=datos.get("id_proveedor"),
         nombre_proveedor=(datos.get("nombre_proveedor") or "").strip(),

@@ -73,25 +73,31 @@ class Movimiento(ModeloBase):
 
     @property
     def tipo_movimiento(self):
+        """ENTRADA, SALIDA o AJUSTE."""
         return self._tipo_movimiento
 
     @property
     def cantidad(self):
+        """Unidades del movimiento; en un ajuste, el stock final."""
         return self._cantidad
 
     @property
     def stock_anterior(self):
+        """Stock del producto antes de aplicar el movimiento."""
         return self._stock_anterior
 
     @property
     def stock_nuevo(self):
+        """Stock del producto después de aplicar el movimiento."""
         return self._stock_nuevo
 
     @property
     def subtotal(self):
+        """Precio de compra por cantidad, si se indicó precio."""
         return self._subtotal
 
     def validar(self):
+        """Exige que el movimiento indique un producto."""
         if not self.id_producto:
             raise DatosInvalidosError("Debe seleccionar un producto.")
 
@@ -127,6 +133,7 @@ class Movimiento(ModeloBase):
         return round(float(self.precio_compra) * self._cantidad, 2)
 
     def to_dict(self):
+        """Representación del movimiento para las respuestas JSON."""
         return {
             "id": self.id,
             "id_producto": self.id_producto,
@@ -155,6 +162,7 @@ class Movimiento(ModeloBase):
 
 
 def crear_movimiento(datos):
+    """Construye un movimiento normalizando los datos del formulario."""
     precio = datos.get("precio_compra")
     return Movimiento(
         id=datos.get("id"),

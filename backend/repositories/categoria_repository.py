@@ -1,11 +1,15 @@
 from repositories.database import get_connection
 from models.categoria import crear_categoria
 
+
 class CategoriaRepository:
+    """Acceso a datos de categorías en MySQL."""
+
     def _fila_a_categoria(self, fila):
         return crear_categoria(dict(fila))
 
     def listar(self, solo_activos=False):
+        """Lista las categorías no eliminadas; con solo_activos=True, solo las activas."""
         conn = get_connection()
         try:
             cursor = conn.cursor(dictionary=True)
@@ -17,6 +21,7 @@ class CategoriaRepository:
             conn.close()
 
     def obtener(self, id):
+        """Busca una categoría por id; devuelve None si no existe."""
         conn = get_connection()
         try:
             cursor = conn.cursor(dictionary=True)
@@ -28,6 +33,7 @@ class CategoriaRepository:
             conn.close()
 
     def buscar_por_nombre(self, nombre):
+        """Busca una categoría por nombre; devuelve None si no existe."""
         conn = get_connection()
         try:
             cursor = conn.cursor(dictionary=True)
@@ -39,6 +45,7 @@ class CategoriaRepository:
             conn.close()
 
     def agregar(self, categoria):
+        """Inserta la categoría y le asigna el id generado."""
         conn = get_connection()
         try:
             cursor = conn.cursor()
@@ -54,6 +61,7 @@ class CategoriaRepository:
             conn.close()
 
     def actualizar(self, categoria):
+        """Actualiza la categoría en la base de datos."""
         conn = get_connection()
         try:
             cursor = conn.cursor()
@@ -68,9 +76,11 @@ class CategoriaRepository:
             conn.close()
 
     def eliminar(self, id):
+        """Marca la categoría como eliminada (eliminación lógica)."""
         self.cambiar_estado(id, 2)
 
     def cambiar_estado(self, id, estado):
+        """Actualiza el estado (0 inactivo, 1 activo, 2 eliminado)."""
         conn = get_connection()
         try:
             cursor = conn.cursor()

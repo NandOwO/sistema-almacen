@@ -3,6 +3,8 @@ from models.base import ModeloBase
 
 
 class Usuario(ModeloBase):
+    """Cuenta de acceso al sistema asociada a un perfil."""
+
     def __init__(
         self,
         id_usuario,
@@ -25,6 +27,7 @@ class Usuario(ModeloBase):
         self.validar()
 
     def validar(self):
+        """Valida y normaliza los campos del usuario."""
         self.usuario = validadores.usuario_valido(self.usuario)
         self.nombre = validadores.texto_sin_simbolos(
             self.nombre, "Nombre", obligatorio=False
@@ -33,9 +36,11 @@ class Usuario(ModeloBase):
 
     @property
     def activo(self):
+        """Indica si la cuenta puede iniciar sesión."""
         return int(self.estado) == 1
 
     def to_dict(self):
+        """Representación del usuario para las respuestas JSON."""
         return {
             "id_usuario": self.id_usuario,
             "usuario": self.usuario,
@@ -48,6 +53,7 @@ class Usuario(ModeloBase):
 
 
 def crear_usuario(datos):
+    """Construye un usuario a partir de un diccionario."""
     return Usuario(
         id_usuario=datos.get("id_usuario"),
         usuario=(datos.get("usuario") or "").strip(),

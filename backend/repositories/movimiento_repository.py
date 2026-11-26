@@ -11,7 +11,10 @@ SELECT_HISTORIAL = (
     "LEFT JOIN usuarios u ON m.id_usuario = u.id_usuario"
 )
 
+
 class MovimientoRepository:
+    """Acceso a datos de movimientos en MySQL."""
+
     def _fila_a_movimiento(self, fila):
         datos = dict(fila)
         movimiento = crear_movimiento(datos)
@@ -28,6 +31,7 @@ class MovimientoRepository:
         return movimiento
 
     def registrar(self, movimiento):
+        """Registra el movimiento y actualiza el stock en una sola transacción."""
         conn = get_connection()
         try:
             cursor = conn.cursor(dictionary=True)
@@ -79,6 +83,7 @@ class MovimientoRepository:
             conn.close()
 
     def contar_por_proveedor(self, id_proveedor):
+        """Cantidad de movimientos asociados a un proveedor."""
         conn = get_connection()
         try:
             cursor = conn.cursor()
@@ -91,9 +96,11 @@ class MovimientoRepository:
             conn.close()
 
     def listar(self, limite=100):
+        """Últimos movimientos, del más reciente al más antiguo."""
         return self.listar_filtrado({}, limite)
 
     def listar_filtrado(self, filtros, limite=500):
+        """Movimientos filtrados por producto, tipo, proveedor y rango de fechas."""
         condiciones, parametros = [], []
         if filtros.get("id_producto"):
             condiciones.append("m.id_producto = %s")

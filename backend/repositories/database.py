@@ -46,4 +46,5 @@ class ConexionBD(metaclass=Singleton):
 
 
 def get_connection():
+    """Atajo para obtener una conexión del Singleton ConexionBD."""
     return ConexionBD().obtener_conexion()

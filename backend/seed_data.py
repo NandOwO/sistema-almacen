@@ -1,8 +1,14 @@
+import logging
+from datetime import date, timedelta
+
+from exceptions.errores import InventarioError
 from repositories.database import get_connection
 from services.usuario_service import UsuarioService
 from services.categoria_service import CategoriaService
 from services.inventario_service import InventarioService
 from services.proveedor_service import ProveedorService
+
+logger = logging.getLogger("inventario")
 
 MODULOS = [
     ("Dashboard", "bi-speedometer2", "dashboard", 1),
@@ -49,19 +55,31 @@ CATEGORIAS = [
 ]
 
 PRODUCTOS = [
-    {"nombre": "Laptop 14''", "categoria": "Tecnología", "cantidad": 12, "precio": 2500.0, "stock_minimo": 5},
-    {"nombre": "Mouse inalámbrico", "categoria": "Tecnología", "cantidad": 3, "precio": 60.0, "stock_minimo": 10},
-    {"nombre": "Teclado mecánico", "categoria": "Tecnología", "cantidad": 15, "precio": 180.0, "stock_minimo": 5},
-    {"nombre": "Monitor 24''", "categoria": "Tecnología", "cantidad": 7, "precio": 650.0, "stock_minimo": 4},
-    {"nombre": "Cuaderno A4", "categoria": "Papelería", "cantidad": 120, "precio": 4.5, "stock_minimo": 30},
-    {"nombre": "Lapicero azul", "categoria": "Papelería", "cantidad": 8, "precio": 1.2, "stock_minimo": 20},
-    {"nombre": "Resma de papel", "categoria": "Papelería", "cantidad": 40, "precio": 22.0, "stock_minimo": 15},
-    {"nombre": "Leche entera 1L", "categoria": "Alimentos", "cantidad": 40, "precio": 5.0, "stock_minimo": 15, "fecha_vencimiento": "2026-08-30"},
-    {"nombre": "Café molido 500g", "categoria": "Alimentos", "cantidad": 25, "precio": 22.0, "stock_minimo": 10, "fecha_vencimiento": "2026-12-15"},
-    {"nombre": "Arroz 5kg", "categoria": "Alimentos", "cantidad": 60, "precio": 28.0, "stock_minimo": 20},
-    {"nombre": "Detergente 1kg", "categoria": "Limpieza", "cantidad": 30, "precio": 15.0, "stock_minimo": 12},
-    {"nombre": "Jabón líquido", "categoria": "Limpieza", "cantidad": 4, "precio": 9.5, "stock_minimo": 10},
+    ("Laptop 14''", "Tecnología", 12, 2500.0, 5, None),
+    ("Mouse inalámbrico", "Tecnología", 3, 60.0, 10, None),
+    ("Teclado mecánico", "Tecnología", 15, 180.0, 5, None),
+    ("Monitor 24''", "Tecnología", 7, 650.0, 4, None),
+    ("Cuaderno A4", "Papelería", 120, 4.5, 30, None),
+    ("Lapicero azul", "Papelería", 8, 1.2, 20, None),
+    ("Resma de papel", "Papelería", 40, 22.0, 15, None),
+    ("Leche entera 1L", "Alimentos", 40, 5.0, 15, 20),
+    ("Café molido 500g", "Alimentos", 25, 22.0, 10, 120),
+    ("Arroz 5kg", "Alimentos", 60, 28.0, 20, None),
+    ("Detergente 1kg", "Limpieza", 30, 15.0, 12, None),
+    ("Jabón líquido", "Limpieza", 4, 9.5, 10, None),
 ]
+
+
+def _datos_producto(nombre, categoria, cantidad, precio, stock_minimo, dias_para_vencer):
+    """Arma el producto de ejemplo; la fecha de vencimiento es relativa a hoy."""
+    fecha = None
+    if dias_para_vencer is not None:
+        fecha = (date.today() + timedelta(days=dias_para_vencer)).isoformat()
+    return {
+        "nombre": nombre, "categoria": categoria, "cantidad": cantidad, "precio": precio,
+        "stock_minimo": stock_minimo, "fecha_vencimiento": fecha,
+    }
+
 
 def _tabla_vacia(tabla):
     conn = get_connection()
@@ -72,6 +90,7 @@ def _tabla_vacia(tabla):
     finally:
         cursor.close()
         conn.close()
+
 
 def _sembrar_perfil_usuario_y_menu():
     conn = get_connection()
@@ -100,7 +119,9 @@ def _sembrar_perfil_usuario_y_menu():
     datos_admin = dict(USUARIO_ADMIN, id_perfil=id_perfil)
     UsuarioService().crear_usuario(datos_admin)
 
+
 def sembrar_datos_si_vacio():
+    """Carga el administrador, el menú y datos de ejemplo si las tablas están vacías."""
     if _tabla_vacia("usuarios"):
         _sembrar_perfil_usuario_y_menu()
         print(f"Menú y usuario 'admin' creados (clave: {USUARIO_ADMIN['clave']}).")
@@ -118,10 +139,13 @@ def sembrar_datos_si_vacio():
         for categoria in CATEGORIAS:
             creada = categoria_service.crear_categoria(categoria)
             mapa_categorias[creada.nombre] = creada.id
-        for producto in PRODUCTOS:
-            datos = dict(producto)
+        for fila in PRODUCTOS:
+            datos = _datos_producto(*fila)
             datos["categoria_id"] = mapa_categorias[datos.pop("categoria")]
-            producto_service.crear_producto(datos)
+            try:
+                producto_service.crear_producto(datos)
+            except InventarioError:
+                logger.warning("No se pudo sembrar el producto %s", datos["nombre"], exc_info=True)
         print(
             f"{len(CATEGORIAS)} categorías y {len(PRODUCTOS)} productos de ejemplo cargados."
         )
