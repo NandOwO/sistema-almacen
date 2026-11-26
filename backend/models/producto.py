@@ -40,6 +40,7 @@ class Producto(ModeloBase):
 
     @property
     def nombre(self):
+        """Nombre descriptivo, sin espacios repetidos."""
         return self._nombre
 
     @nombre.setter
@@ -48,6 +49,7 @@ class Producto(ModeloBase):
 
     @property
     def categoria_id(self):
+        """Id de la categoría a la que pertenece."""
         return self._categoria_id
 
     @categoria_id.setter
@@ -58,6 +60,7 @@ class Producto(ModeloBase):
 
     @property
     def cantidad(self):
+        """Unidades en stock; nunca negativa."""
         return self._cantidad
 
     @cantidad.setter
@@ -66,6 +69,7 @@ class Producto(ModeloBase):
 
     @property
     def precio(self):
+        """Precio unitario de venta; nunca negativo."""
         return self._precio
 
     @precio.setter
@@ -80,6 +84,7 @@ class Producto(ModeloBase):
 
     @property
     def stock_minimo(self):
+        """Umbral a partir del cual se sugiere reponer."""
         return self._stock_minimo
 
     @stock_minimo.setter
@@ -90,6 +95,7 @@ class Producto(ModeloBase):
 
     @property
     def estado(self):
+        """0 inactivo, 1 activo, 2 eliminado."""
         return self._estado
 
     @estado.setter
@@ -101,21 +107,26 @@ class Producto(ModeloBase):
 
     @property
     def tipo(self):
+        """Tipo de producto; las subclases lo redefinen."""
         return "General"
 
     @property
     def categoria(self):
+        """Nombre de la categoría, si se cargó junto al producto."""
         return self.categoria_nombre
 
     @property
     def valor_total(self):
+        """Cantidad por precio, redondeado a dos decimales."""
         return round(self._cantidad * self._precio, 2)
 
     @property
     def necesita_reposicion(self):
+        """True si el stock está en o bajo el mínimo."""
         return self._cantidad <= self._stock_minimo
 
     def to_dict(self):
+        """Representación del producto para las respuestas JSON."""
         return {
             "id": self.id,
             "nombre": self.nombre,
@@ -140,6 +151,7 @@ class ProductoPerecedero(Producto):
 
     @property
     def fecha_vencimiento(self):
+        """Fecha de vencimiento en formato AAAA-MM-DD."""
         return self._fecha_vencimiento
 
     @fecha_vencimiento.setter
@@ -148,15 +160,18 @@ class ProductoPerecedero(Producto):
 
     @property
     def tipo(self):
+        """Siempre 'Perecedero'."""
         return "Perecedero"
 
     @property
     def esta_vencido(self):
+        """True si la fecha de vencimiento ya pasó."""
         if not self._fecha_vencimiento:
             return False
         return date.fromisoformat(self._fecha_vencimiento) < date.today()
 
     def to_dict(self):
+        """Agrega la fecha de vencimiento y si está vencido."""
         datos = super().to_dict()
         datos["fecha_vencimiento"] = self.fecha_vencimiento
         datos["esta_vencido"] = self.esta_vencido

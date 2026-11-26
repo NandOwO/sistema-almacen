@@ -35,18 +35,22 @@ def _df_movimientos(movimientos):
 
 
 def valor_total_inventario(productos):
+    """Suma el valor de todos los productos (reduce)."""
     return round(reduce(lambda acc, p: acc + p.valor_total, productos, 0.0), 2)
 
 
 def unidades_totales(productos):
+    """Suma las unidades en stock (reduce)."""
     return reduce(lambda acc, p: acc + p.cantidad, productos, 0)
 
 
 def productos_bajo_stock(productos):
+    """Productos que necesitan reposición (filter)."""
     return list(filter(lambda p: p.necesita_reposicion, productos))
 
 
 def valor_por_categoria(productos):
+    """Valor del inventario por categoría (reduce sobre un diccionario)."""
     return reduce(
         lambda acc, p: {
             **acc,
@@ -58,12 +62,14 @@ def valor_por_categoria(productos):
 
 
 def conteo_por_categoria(productos):
+    """Cantidad de productos por categoría (reduce)."""
     return reduce(
         lambda acc, p: {**acc, p.categoria: acc.get(p.categoria, 0) + 1}, productos, {}
     )
 
 
 def generar_resumen(productos):
+    """Indicadores generales del inventario para el dashboard."""
     bajo_stock = productos_bajo_stock(productos)
     venc = reporte_vencimientos(productos)["resumen"]
     return {
@@ -121,6 +127,7 @@ def _suma(movimientos, condicion, campo):
 
 
 def resumen_movimientos(movimientos):
+    """Cuenta entradas, salidas y ajustes y suma unidades y compras."""
     def es(tipo):
         return lambda m: m.tipo_movimiento == tipo
 
@@ -174,6 +181,7 @@ def detalle_bajo_stock(productos):
 
 
 def resumen_bajo_stock(productos):
+    """Totales de productos bajo stock y sin stock, con máscaras de NumPy."""
     if not productos:
         return {"total_productos": 0, "bajo_stock": 0, "sin_stock": 0, "unidades_faltantes": 0}
 

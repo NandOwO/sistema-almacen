@@ -4,7 +4,10 @@ from repositories.producto_repository import ProductoRepository
 from repositories.categoria_repository import CategoriaRepository
 from exceptions.errores import ProductoNoEncontradoError, DatosInvalidosError
 
+
 class InventarioService:
+    """Reglas de negocio del catálogo de productos."""
+
     def __init__(self, repositorio=None, categoria_repo=None):
         self.repo = repositorio or ProductoRepository()
         self.categoria_repo = categoria_repo or CategoriaRepository()
@@ -14,15 +17,18 @@ class InventarioService:
             raise DatosInvalidosError("La categoría seleccionada no existe.")
 
     def listar_productos(self, solo_activos=False):
+        """Lista los productos; con solo_activos=True, solo los activos."""
         return self.repo.listar(solo_activos)
 
     def obtener_producto(self, id):
+        """Devuelve el producto o lanza un error 404 si no existe."""
         producto = self.repo.obtener(id)
         if producto is None:
             raise ProductoNoEncontradoError(f"No existe el producto con id {id}.")
         return producto
 
     def crear_producto(self, datos):
+        """Registra un producto con categoría existente y vencimiento no pasado."""
         datos = dict(datos)
         validadores.fecha_no_pasada(datos.get("fecha_vencimiento"))
         producto = crear_producto(datos)
@@ -30,6 +36,7 @@ class InventarioService:
         return self.repo.agregar(producto)
 
     def actualizar_producto(self, id, datos):
+        """Actualiza el producto; solo valida el vencimiento si cambió."""
         actual = self.obtener_producto(id)
         datos = dict(datos)
         datos["id"] = id
@@ -41,10 +48,12 @@ class InventarioService:
         return self.repo.actualizar(producto)
 
     def eliminar_producto(self, id):
+        """Elimina el producto de forma lógica."""
         self.obtener_producto(id)
         self.repo.eliminar(id)
 
     def cambiar_estado_producto(self, id, estado):
+        """Activa (1) o desactiva (0) el producto."""
         if int(estado) not in (0, 1):
             raise DatosInvalidosError("Estado inválido.")
         self.obtener_producto(id)

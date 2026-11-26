@@ -43,6 +43,7 @@ COLUMNAS = {
     ],
 }
 
+
 def _df(records, clave_columnas):
     columnas = COLUMNAS[clave_columnas]
     titulos = [t for _, t in columnas]
@@ -51,7 +52,9 @@ def _df(records, clave_columnas):
     origen = pd.DataFrame(records)
     return pd.DataFrame({t: origen[c] if c in origen else None for c, t in columnas})
 
+
 class ReporteController:
+    """Arma los reportes y sus exportaciones a partir de los servicios."""
 
     def __init__(self):
         self.inventario = InventarioService()
@@ -59,6 +62,7 @@ class ReporteController:
         self.exportacion = ExportacionService()
 
     def resumen(self):
+        """Indicadores del dashboard: totales, alertas y movimientos recientes."""
         productos = self.inventario.listar_productos(solo_activos=True)
         resumen = reportes_service.generar_resumen(productos)
 
@@ -77,10 +81,12 @@ class ReporteController:
         return jsonify(resumen)
 
     def analisis(self):
+        """Inventario valorizado agrupado por categoría."""
         productos = self.inventario.listar_productos(solo_activos=True)
         return jsonify(reportes_service.analisis_pandas(productos))
 
     def movimientos_reporte(self, filtros):
+        """Kardex filtrado y su resumen."""
         movimientos = self.movimientos.listar_filtrado(filtros)
         return jsonify({
             "movimientos": [m.to_dict() for m in movimientos],
@@ -88,11 +94,13 @@ class ReporteController:
         })
 
     def compras(self, filtros):
+        """Compras agrupadas por proveedor."""
         filtros = dict(filtros or {}, tipo_movimiento="ENTRADA")
         movimientos = self.movimientos.listar_filtrado(filtros)
         return jsonify(reportes_service.compras_por_proveedor(movimientos))
 
     def bajo_stock(self):
+        """Productos en o bajo su stock mínimo."""
         productos = self.inventario.listar_productos(solo_activos=True)
         bajos = [p.to_dict() for p in productos if p.necesita_reposicion]
         return jsonify({
@@ -101,9 +109,11 @@ class ReporteController:
         })
 
     def reposicion(self, filtros):
+        """Predicción de reposición según el consumo reciente."""
         return jsonify(self._datos_reposicion(filtros))
 
     def vencimientos(self, filtros):
+        """Perecederos vencidos, por vencer y vigentes."""
         return jsonify(self._datos_vencimientos(filtros))
 
     def _datos_vencimientos(self, filtros):
@@ -122,6 +132,7 @@ class ReporteController:
         return reportes_service.prediccion_reposicion(productos, salidas, ventana, cobertura)
 
     def exportar(self, reporte, formato, filtros):
+        """Genera el reporte en el formato pedido y lo envía como descarga."""
         self.exportacion.obtener_estrategia(formato)
         titulo, tablas = self._tablas(reporte, filtros)
         archivo = self.exportacion.exportar(formato, reporte, titulo, tablas)

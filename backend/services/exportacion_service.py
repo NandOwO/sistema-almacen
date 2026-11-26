@@ -21,9 +21,11 @@ class ExportacionService:
 
     @property
     def formatos(self):
+        """Formatos de exportación disponibles."""
         return tuple(self._estrategias)
 
     def obtener_estrategia(self, formato):
+        """Devuelve la estrategia del formato o lanza un error si no existe."""
         estrategia = self._estrategias.get(formato)
         if estrategia is None:
             opciones = ", ".join(f"'{f}'" for f in self.formatos)
@@ -31,6 +33,7 @@ class ExportacionService:
         return estrategia
 
     def exportar(self, formato, nombre, titulo, tablas):
+        """Genera el archivo con la estrategia del formato y le pone nombre y tipo MIME."""
         estrategia = self.obtener_estrategia(formato)
         return ArchivoExportado(
             contenido=estrategia.exportar(titulo, tablas),

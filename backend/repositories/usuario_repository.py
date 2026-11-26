@@ -6,11 +6,15 @@ SELECT_BASE = (
     "FROM usuarios u LEFT JOIN perfiles pf ON u.id_perfil = pf.id_perfil"
 )
 
+
 class UsuarioRepository:
+    """Acceso a datos de usuarios en MySQL."""
+
     def _fila_a_usuario(self, fila):
         return crear_usuario(dict(fila))
 
     def listar(self, solo_activos=False):
+        """Lista los usuarios no eliminados; con solo_activos=True, solo los activos."""
         conn = get_connection()
         try:
             cursor = conn.cursor(dictionary=True)
@@ -22,6 +26,7 @@ class UsuarioRepository:
             conn.close()
 
     def obtener(self, id_usuario):
+        """Busca un usuario por id; devuelve None si no existe."""
         conn = get_connection()
         try:
             cursor = conn.cursor(dictionary=True)
@@ -33,6 +38,7 @@ class UsuarioRepository:
             conn.close()
 
     def buscar_por_usuario(self, usuario):
+        """Busca una cuenta por nombre de usuario; devuelve None si no existe."""
         conn = get_connection()
         try:
             cursor = conn.cursor(dictionary=True)
@@ -44,6 +50,7 @@ class UsuarioRepository:
             conn.close()
 
     def agregar(self, usuario, clave_hash):
+        """Inserta el usuario y le asigna el id generado."""
         conn = get_connection()
         try:
             cursor = conn.cursor()
@@ -67,6 +74,7 @@ class UsuarioRepository:
             conn.close()
 
     def actualizar(self, usuario, clave_hash=None):
+        """Actualiza el usuario en la base de datos."""
         conn = get_connection()
         try:
             cursor = conn.cursor()
@@ -91,9 +99,11 @@ class UsuarioRepository:
             conn.close()
 
     def eliminar(self, id_usuario):
+        """Marca el usuario como eliminado (eliminación lógica)."""
         self.cambiar_estado(id_usuario, 2)
 
     def cambiar_estado(self, id_usuario, estado):
+        """Actualiza el estado (0 inactivo, 1 activo, 2 eliminado)."""
         conn = get_connection()
         try:
             cursor = conn.cursor()
@@ -107,6 +117,7 @@ class UsuarioRepository:
             conn.close()
 
     def actualizar_clave(self, id_usuario, clave_hash):
+        """Guarda el nuevo hash de contraseña del usuario."""
         conn = get_connection()
         try:
             cursor = conn.cursor()

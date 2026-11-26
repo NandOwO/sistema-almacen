@@ -1,7 +1,10 @@
 from repositories.database import get_connection
 from models.perfil import crear_perfil
 
+
 class PerfilRepository:
+    """Acceso a datos de perfiles en MySQL."""
+
     def _ids_modulos(self, cursor, id_perfil):
         cursor.execute(
             "SELECT id_modulo FROM perfil_modulo WHERE id_perfil = %s", (id_perfil,)
@@ -14,6 +17,7 @@ class PerfilRepository:
         return crear_perfil(datos)
 
     def listar(self, solo_activos=False):
+        """Lista los perfiles no eliminados; con solo_activos=True, solo los activos."""
         conn = get_connection()
         try:
             cursor = conn.cursor(dictionary=True)
@@ -26,6 +30,7 @@ class PerfilRepository:
             conn.close()
 
     def obtener(self, id_perfil):
+        """Busca un perfil por id; devuelve None si no existe."""
         conn = get_connection()
         try:
             cursor = conn.cursor(dictionary=True)
@@ -37,6 +42,7 @@ class PerfilRepository:
             conn.close()
 
     def buscar_por_nombre(self, nombre):
+        """Busca un perfil por nombre; devuelve None si no existe."""
         conn = get_connection()
         try:
             cursor = conn.cursor(dictionary=True)
@@ -48,6 +54,7 @@ class PerfilRepository:
             conn.close()
 
     def agregar(self, perfil):
+        """Inserta el perfil y le asigna el id generado."""
         conn = get_connection()
         try:
             cursor = conn.cursor()
@@ -64,6 +71,7 @@ class PerfilRepository:
             conn.close()
 
     def actualizar(self, perfil):
+        """Actualiza el perfil en la base de datos."""
         conn = get_connection()
         try:
             cursor = conn.cursor()
@@ -82,9 +90,11 @@ class PerfilRepository:
             conn.close()
 
     def eliminar(self, id_perfil):
+        """Marca el perfil como eliminado (eliminación lógica)."""
         self.cambiar_estado(id_perfil, 2)
 
     def cambiar_estado(self, id_perfil, estado):
+        """Actualiza el estado (0 inactivo, 1 activo, 2 eliminado)."""
         conn = get_connection()
         try:
             cursor = conn.cursor()

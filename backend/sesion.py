@@ -7,24 +7,35 @@ from exceptions.errores import NoAutenticadoError, NoAutorizadoError
 CLAVE_USUARIO = "id_usuario"
 CLAVE_PERFIL = "id_perfil"
 
+
 def iniciar_sesion(usuario):
+    """Guarda el usuario y su perfil en la sesión."""
     session[CLAVE_USUARIO] = usuario.id_usuario
     session[CLAVE_PERFIL] = usuario.id_perfil
 
+
 def cerrar_sesion():
+    """Elimina todos los datos de la sesión."""
     session.clear()
 
+
 def hay_sesion():
+    """True si hay un usuario conectado."""
     return CLAVE_USUARIO in session
 
+
 def id_usuario_actual():
+    """Id del usuario conectado o None."""
     return session.get(CLAVE_USUARIO)
 
+
 def id_perfil_actual():
+    """Id del perfil del usuario conectado o None."""
     return session.get(CLAVE_PERFIL)
 
-def login_requerido(vista):
 
+def login_requerido(vista):
+    """Decorador: exige una sesión iniciada."""
     @wraps(vista)
     def envoltura(*args, **kwargs):
         if not hay_sesion():
@@ -33,8 +44,9 @@ def login_requerido(vista):
 
     return envoltura
 
-def requiere_modulo(ruta):
 
+def requiere_modulo(ruta):
+    """Decorador: exige sesión y permiso del perfil sobre el módulo indicado."""
     def decorador(vista):
         @wraps(vista)
         def envoltura(*args, **kwargs):

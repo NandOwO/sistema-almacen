@@ -11,22 +11,28 @@ from exceptions.errores import (
 LONGITUD_MINIMA_CLAVE = 4
 RUTAS_ADMIN = ("usuarios", "perfiles")
 
+
 class UsuarioService:
+    """Reglas de negocio de usuarios."""
+
     def __init__(self, repositorio=None, perfil_repo=None, modulo_repo=None):
         self.repositorio = repositorio or UsuarioRepository()
         self.perfil_repo = perfil_repo or PerfilRepository()
         self.modulo_repo = modulo_repo or ModuloRepository()
 
     def listar_usuarios(self, solo_activos=False):
+        """Lista los usuarios; con solo_activos=True, solo los activos."""
         return self.repositorio.listar(solo_activos)
 
     def obtener_usuario(self, id_usuario):
+        """Devuelve el usuario o lanza un error 404 si no existe."""
         usuario = self.repositorio.obtener(id_usuario)
         if usuario is None:
             raise UsuarioNoEncontradoError(f"No existe el usuario con id {id_usuario}.")
         return usuario
 
     def crear_usuario(self, datos):
+        """Valida los datos y registra un usuario nuevo."""
         usuario = crear_usuario(dict(datos))
         self._validar_perfil(usuario.id_perfil)
         clave = self._validar_clave(datos.get("clave"), obligatoria=True)
@@ -35,6 +41,7 @@ class UsuarioService:
         return self.repositorio.agregar(usuario, generate_password_hash(clave))
 
     def actualizar_usuario(self, id_usuario, datos):
+        """Valida los datos y actualiza el usuario existente."""
         self.obtener_usuario(id_usuario)
         datos = dict(datos)
         datos["id_usuario"] = id_usuario
@@ -52,6 +59,7 @@ class UsuarioService:
         return self.repositorio.actualizar(usuario, clave_hash)
 
     def eliminar_usuario(self, id_usuario, id_usuario_actual=None):
+        """Elimina el usuario, salvo el propio o un administrador."""
         usuario = self.obtener_usuario(id_usuario)
         self._impedir_sobre_si_mismo(id_usuario, id_usuario_actual,
                                      "No puedes eliminar tu propio usuario.")
@@ -60,6 +68,7 @@ class UsuarioService:
         self.repositorio.eliminar(id_usuario)
 
     def cambiar_estado_usuario(self, id_usuario, estado, id_usuario_actual=None):
+        """Activa o desactiva el usuario, sin afectar al propio usuario."""
         if int(estado) not in (0, 1):
             raise DatosInvalidosError("Estado inválido.")
         usuario = self.obtener_usuario(id_usuario)
@@ -81,6 +90,7 @@ class UsuarioService:
         return any(mod in perfil.modulos for mod in ids_admin)
 
     def actualizar_datos_propios(self, id_usuario, datos):
+        """Actualiza nombre y correo sin permitir cambiar usuario ni perfil."""
         actual = self.obtener_usuario(id_usuario)
         datos_seguros = {
             "id_usuario": id_usuario,
@@ -94,6 +104,7 @@ class UsuarioService:
         return self.repositorio.actualizar(usuario, None)
 
     def cambiar_clave_propia(self, id_usuario, clave_actual, clave_nueva):
+        """Cambia la contraseña tras verificar la actual."""
         usuario = self.obtener_usuario(id_usuario)
         if not check_password_hash(usuario.clave or "", clave_actual or ""):
             raise CredencialesInvalidasError("La clave actual es incorrecta.")

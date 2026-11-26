@@ -2,6 +2,8 @@ from models.base import ModeloBase
 
 
 class Modulo(ModeloBase):
+    """Opción del menú lateral asociada a una ruta de la SPA."""
+
     def __init__(self, id_modulo, nombre, icono, ruta, orden=0, estado=1):
         self.id_modulo = id_modulo
         self.nombre = nombre
@@ -11,6 +13,7 @@ class Modulo(ModeloBase):
         self.estado = estado
 
     def to_dict(self):
+        """Representación del módulo para las respuestas JSON."""
         return {
             "id_modulo": self.id_modulo,
             "nombre": self.nombre,
@@ -21,6 +24,7 @@ class Modulo(ModeloBase):
 
 
 def crear_modulo(datos):
+    """Construye un módulo a partir de una fila de la base de datos."""
     return Modulo(
         id_modulo=datos.get("id_modulo"),
         nombre=datos.get("nombre"),

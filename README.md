@@ -1,13 +1,14 @@
 # Sistema de Inventario
 
-Aplicación web de gestión de inventario desarrollada como proyecto de **Programación Multiparadigma**. Permite administrar productos, categorías, proveedores, usuarios y perfiles con permisos; registrar entradas, salidas y ajustes de stock con kardex; y generar reportes con gráficos, exportación a Excel/PDF y predicción de reposición.
+Aplicación web de gestión de inventario desarrollada como proyecto de **Programación Multiparadigma**. Permite administrar productos, categorías, proveedores, usuarios y perfiles con permisos; registrar entradas, salidas y ajustes de stock con kardex; generar reportes con gráficos, predicción de reposición y exportación a Excel, PDF, CSV y JSON; e importar productos de forma masiva desde archivos CSV o JSON.
 
 ## Características
 
 - **Autenticación** con sesión, contraseñas hasheadas y permisos por perfil (cada perfil ve solo sus módulos).
 - **Catálogo**: productos (incluye perecederos con fecha de vencimiento), categorías y proveedores.
 - **Inventario**: entradas, salidas y ajustes por producto, con historial (kardex), stock transaccional y documento obligatorio en compras y ventas.
-- **Reportes** (6): valorizado, movimientos/kardex, reposición sugerida, vencimientos, bajo stock y compras por proveedor — con filtros, gráficos y exportación a **Excel** (pandas) y **PDF** (fpdf2).
+- **Reportes** (6): valorizado, movimientos/kardex, reposición sugerida, vencimientos, bajo stock y compras por proveedor, con filtros, gráficos y exportación a **Excel**, **PDF**, **CSV** y **JSON**. Los cálculos usan operaciones vectorizadas de NumPy y pandas.
+- **Importación masiva** de productos desde CSV o JSON: limpia y valida todas las filas, importa las válidas e informa el motivo de cada fila rechazada.
 - **Innovación**: *predicción de reposición* (consumo diario, días hasta agotarse y cantidad sugerida de compra a partir del historial) y *alertas de vencimiento*.
 - **Eliminación lógica** en 3 estados (activo / inactivo / eliminado) sin perder historial.
 - **SPA sin recargas**: toda la navegación y las acciones ocurren sin recargar la página ni cambiar la URL.
@@ -17,9 +18,10 @@ Aplicación web de gestión de inventario desarrollada como proyecto de **Progra
 
 | Capa | Tecnología |
 |---|---|
-| Backend | Python 3.12, Flask, MySQL (mysql-connector), pandas, openpyxl, fpdf2 |
+| Backend | Python 3.12, Flask, MySQL (mysql-connector), NumPy, pandas, openpyxl, fpdf2 |
 | Frontend | JavaScript (módulos ES), Bootstrap 5, Chart.js, SweetAlert2 |
 | Base de datos | MySQL / MariaDB |
+| Pruebas y calidad | pytest, flake8 (PEP 8) |
 
 ## Requisitos
 
@@ -56,7 +58,7 @@ Aplicación web de gestión de inventario desarrollada como proyecto de **Progra
    pip install -r requirements.txt
    ```
 
-5. **Ejecutar las pruebas** (desde la raíz del proyecto):
+5. **Ejecutar las pruebas** (desde la raíz del proyecto; no necesitan MySQL):
 
    ```powershell
    pytest
@@ -77,6 +79,32 @@ Aplicación web de gestión de inventario desarrollada como proyecto de **Progra
 
    La primera vez, el sistema siembra automáticamente el perfil Administrador, los módulos del menú, proveedores, categorías y productos de ejemplo.
 
+## Importar productos
+
+En **Productos → Importar** se puede subir un archivo `.csv` o `.json` (máximo 2 MB y 1000 filas) con estas columnas:
+
+| Columna | Obligatoria | Formato |
+|---|---|---|
+| `nombre` | Sí | Texto |
+| `categoria` | Sí | Nombre de una categoría existente |
+| `cantidad` | Sí | Entero no negativo |
+| `precio` | Sí | Número no negativo |
+| `stock_minimo` | No | Entero no negativo (por defecto 5) |
+| `fecha_vencimiento` | No | `AAAA-MM-DD`, no anterior a hoy |
+
+La carpeta `data/` incluye `productos_ejemplo.csv`, `productos_ejemplo.json` y `productos_con_errores.csv` (este último con errores a propósito para ver la validación).
+
+## Pruebas y calidad
+
+```powershell
+pytest            # 152 pruebas: modelos, patrones, servicios, reportes, importación, validadores y API
+pytest -v         # con el nombre de cada prueba
+pip install flake8
+flake8            # revisión PEP 8 con la configuración de .flake8
+```
+
+Las pruebas reemplazan los repositorios por versiones en memoria, así que se ejecutan sin base de datos.
+
 ## Estructura del proyecto
 
 ```
@@ -84,6 +112,8 @@ SistemaInventario/
 ├── schema.sql               # Estructura de la base de datos
 ├── requirements.txt
 ├── pyproject.toml           # Configuración de pytest
+├── .flake8                  # Configuración de PEP 8
+├── docs/PARADIGMAS.md       # POO, patrones, vectorización y excepciones
 ├── data/                    # Archivos CSV/JSON de ejemplo
 ├── tests/                   # Pruebas unitarias (pytest)
 ├── backend/
@@ -93,9 +123,9 @@ SistemaInventario/
 │   ├── validadores.py       # Validaciones reutilizables
 │   ├── seed_data.py         # Datos iniciales
 │   ├── models/              # POO: entidades y reglas propias
-│   ├── patterns/            # Patrones de diseño
+│   ├── patterns/            # Factory Method, Strategy y Singleton
 │   ├── repositories/        # Acceso a MySQL (SQL)
-│   ├── services/            # Reglas de negocio
+│   ├── services/            # Reglas de negocio, reportes, importación y exportación
 │   ├── controllers/         # Petición HTTP → service → JSON
 │   ├── routes/              # URLs (blueprints) + permisos
 │   └── exceptions/          # Errores del dominio con código HTTP
@@ -186,9 +216,15 @@ erDiagram
 
 > Los estados son: `1` activo, `0` inactivo, `2` eliminado (eliminación lógica).
 
-## Paradigmas aplicados
+## Paradigmas y patrones
 
-- **Orientado a objetos**: entidades del dominio en `backend/models/` con herencia (`ProductoPerecedero` extiende `Producto`) y polimorfismo; jerarquía de excepciones en `backend/exceptions/`.
-- **Funcional**: reportes construidos con `reduce`, `filter`, `lambda` y funciones puras en `backend/services/reportes_service.py`.
-- **Declarativo**: consultas SQL en `backend/repositories/` y agregaciones con pandas.
-- **Orientado a eventos**: la interfaz en `frontend/js/` reacciona a las acciones del usuario sin recargar la página.
+| Aspecto | Aplicación |
+|---|---|
+| **Orientado a objetos** | Clase abstracta `ModeloBase`; encapsulamiento con propiedades validadas en `Producto` y `Movimiento`; herencia `ProductoPerecedero → Producto` y jerarquía de excepciones; polimorfismo en `tipo`, `to_dict()` y `exportar()`. |
+| **Patrones de diseño** | **Factory Method** para crear productos, **Strategy** para los formatos de exportación y **Singleton** para el pool de conexiones (`backend/patterns/`). |
+| **Funcional** | Indicadores con `reduce`, `filter` y `lambda` en `services/reportes_service.py`. |
+| **Vectorizado** | Reportes e importación con operaciones de NumPy y pandas sobre columnas completas. |
+| **Declarativo** | Consultas SQL y agregaciones de pandas. |
+| **Orientado a eventos** | Frontend que reacciona a las acciones del usuario sin recargar la página. |
+
+El detalle, con la justificación de cada decisión y su ubicación en el código, está en [docs/PARADIGMAS.md](docs/PARADIGMAS.md).

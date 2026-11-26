@@ -1,11 +1,15 @@
 from repositories.database import get_connection
 from models.proveedor import crear_proveedor
 
+
 class ProveedorRepository:
+    """Acceso a datos de proveedores en MySQL."""
+
     def _fila_a_proveedor(self, fila):
         return crear_proveedor(dict(fila))
 
     def listar(self, solo_activos=False):
+        """Lista los proveedores no eliminados; con solo_activos=True, solo los activos."""
         conn = get_connection()
         try:
             cursor = conn.cursor(dictionary=True)
@@ -17,6 +21,7 @@ class ProveedorRepository:
             conn.close()
 
     def obtener(self, id_proveedor):
+        """Busca un proveedor por id; devuelve None si no existe."""
         conn = get_connection()
         try:
             cursor = conn.cursor(dictionary=True)
@@ -30,6 +35,7 @@ class ProveedorRepository:
             conn.close()
 
     def buscar_por_ruc(self, ruc):
+        """Busca un proveedor por RUC; devuelve None si no existe."""
         conn = get_connection()
         try:
             cursor = conn.cursor(dictionary=True)
@@ -43,6 +49,7 @@ class ProveedorRepository:
             conn.close()
 
     def agregar(self, proveedor):
+        """Inserta el proveedor y le asigna el id generado."""
         conn = get_connection()
         try:
             cursor = conn.cursor()
@@ -68,6 +75,7 @@ class ProveedorRepository:
             conn.close()
 
     def actualizar(self, proveedor):
+        """Actualiza el proveedor en la base de datos."""
         conn = get_connection()
         try:
             cursor = conn.cursor()
@@ -94,9 +102,11 @@ class ProveedorRepository:
             conn.close()
 
     def eliminar(self, id_proveedor):
+        """Marca el proveedor como eliminado (eliminación lógica)."""
         self.cambiar_estado(id_proveedor, 2)
 
     def cambiar_estado(self, id_proveedor, estado):
+        """Actualiza el estado (0 inactivo, 1 activo, 2 eliminado)."""
         conn = get_connection()
         try:
             cursor = conn.cursor()
