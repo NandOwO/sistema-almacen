@@ -64,7 +64,7 @@ class ImportacionService:
 
     @staticmethod
     def _leer_json(archivo):
-        df = pd.read_json(archivo, orient="records", dtype=False, convert_dates=False)
+        df = pd.read_json(archivo, orient="records", dtype=False)
         if not isinstance(df, pd.DataFrame):
             raise ValueError("Se esperaba una lista de objetos.")
         return df
