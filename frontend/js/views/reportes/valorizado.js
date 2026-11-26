@@ -1,5 +1,6 @@
 import { ReportesAPI } from "../../api/inventario_api.js";
-import { dinero, escapar, notificar, pintarTarjetas, graficoBarras, descargarArchivo } from "../../utils/helpers.js";
+import { dinero, escapar, notificar, pintarTarjetas, graficoBarras } from "../../utils/helpers.js";
+import { conectarExportacion } from "../../utils/exportacion.js";
 
 let porCategoria = [];
 let topProductos = [];
@@ -8,10 +9,7 @@ let grafico = null;
 export async function init() {
     ["f-buscar", "f-orden", "f-direccion", "f-min", "f-top"].forEach((id) =>
         document.getElementById(id).addEventListener("input", aplicar));
-    document.getElementById("btn-excel").addEventListener("click", () =>
-        descargarArchivo(ReportesAPI.urlExportar("valorizado", "excel")));
-    document.getElementById("btn-pdf").addEventListener("click", () =>
-        descargarArchivo(ReportesAPI.urlExportar("valorizado", "pdf")));
+    conectarExportacion("valorizado");
 
     try {
         const datos = await ReportesAPI.analisis();

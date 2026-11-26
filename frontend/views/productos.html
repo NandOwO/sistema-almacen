@@ -1,8 +1,13 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h1 class="h4 mb-0">Productos</h1>
-    <button class="btn btn-marca btn-sm" id="btn-nuevo">
-        <i class="bi bi-plus-lg me-1"></i>Nuevo producto
-    </button>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary btn-sm" id="btn-importar">
+            <i class="bi bi-upload me-1"></i>Importar
+        </button>
+        <button class="btn btn-marca btn-sm" id="btn-nuevo">
+            <i class="bi bi-plus-lg me-1"></i>Nuevo producto
+        </button>
+    </div>
 </div>
 
 <div id="tarjetas-productos"></div>
@@ -79,6 +84,36 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
                 <button type="button" class="btn btn-marca" id="btn-guardar">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modal-importar" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title h6">Importar productos</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="form-importar">
+                    <label class="form-label" for="campo-archivo">Archivo CSV o JSON</label>
+                    <input type="file" class="form-control" id="campo-archivo" accept=".csv,.json">
+                    <div class="form-text">
+                        Columnas obligatorias: <code>nombre</code>, <code>categoria</code>, <code>cantidad</code>,
+                        <code>precio</code>. Opcionales: <code>stock_minimo</code> y <code>fecha_vencimiento</code>
+                        (AAAA-MM-DD). La categoría debe existir. Máximo 2 MB.
+                    </div>
+                </form>
+                <div class="alert alert-danger d-none mt-3 mb-0" id="error-importar"></div>
+                <div id="resultado-importar" class="mt-3"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-marca" id="btn-subir">
+                    <i class="bi bi-upload me-1"></i>Importar
+                </button>
             </div>
         </div>
     </div>

@@ -53,6 +53,11 @@ export const InventarioAPI = {
     actualizar: (id, p) => pedir(`${BASE}/productos/${id}`, { method: "PUT", body: JSON.stringify(p) }),
     eliminar: (id) => pedir(`${BASE}/productos/${id}`, { method: "DELETE" }),
     cambiarEstado: (id, estado) => pedir(`${BASE}/productos/${id}/estado`, { method: "PUT", body: JSON.stringify({ estado }) }),
+    importar: (archivo) => {
+        const formulario = new FormData();
+        formulario.append("archivo", archivo);
+        return pedir(`${BASE}/productos/importar`, { method: "POST", body: formulario, headers: {} });
+    },
     resumen: () => pedir(`${BASE}/reportes/resumen`),
     analisis: () => pedir(`${BASE}/reportes/analisis`),
 };
@@ -100,3 +105,10 @@ export const ReportesAPI = {
     urlExportar: (reporte, formato, f) =>
         `${BASE}/reportes/exportar/${reporte}${consulta({ formato, ...f })}`,
 };
+
+export const FORMATOS_EXPORTACION = [
+    { formato: "excel", etiqueta: "Excel (.xlsx)", icono: "bi-file-earmark-spreadsheet" },
+    { formato: "pdf", etiqueta: "PDF (.pdf)", icono: "bi-file-earmark-pdf" },
+    { formato: "csv", etiqueta: "CSV (.csv)", icono: "bi-filetype-csv" },
+    { formato: "json", etiqueta: "JSON (.json)", icono: "bi-filetype-json" },
+];

@@ -1,5 +1,6 @@
 import { ReportesAPI } from "../../api/inventario_api.js";
-import { fechaHora, escapar, notificar, pintarTarjetas, graficoDona, descargarArchivo } from "../../utils/helpers.js";
+import { fechaHora, escapar, notificar, pintarTarjetas, graficoDona } from "../../utils/helpers.js";
+import { conectarExportacion } from "../../utils/exportacion.js";
 
 let filas = [];
 let grafico = null;
@@ -8,10 +9,7 @@ export async function init() {
     document.getElementById("f-dias").addEventListener("change", cargar);
     ["f-estado", "f-buscar", "f-categoria"].forEach((id) =>
         document.getElementById(id).addEventListener("input", aplicar));
-    document.getElementById("btn-excel").addEventListener("click", () =>
-        descargarArchivo(ReportesAPI.urlExportar("vencimientos", "excel", parametros())));
-    document.getElementById("btn-pdf").addEventListener("click", () =>
-        descargarArchivo(ReportesAPI.urlExportar("vencimientos", "pdf", parametros())));
+    conectarExportacion("vencimientos", parametros);
 
     await cargar();
 }

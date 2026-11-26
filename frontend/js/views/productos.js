@@ -1,14 +1,25 @@
 import { InventarioAPI, CategoriasAPI } from "../api/inventario_api.js";
-import { dinero, escapar, notificar, pintarTarjetas, botonesAccion, confirmar } from "../utils/helpers.js";
+import { dinero, escapar, notificar, pintarTarjetas, botonesAccion, confirmar, cargando } from "../utils/helpers.js";
 import * as v from "../utils/validaciones.js";
+
+const EXTENSIONES_IMPORTACION = [".csv", ".json"];
+const TAMANO_MAXIMO_IMPORTACION = 2 * 1024 * 1024;
 
 let productos = [];
 let modalProducto = null;
+let modalImportar = null;
 
 export async function init() {
     modalProducto = new bootstrap.Modal("#modal-producto");
+    modalImportar = new bootstrap.Modal("#modal-importar");
 
     document.getElementById("btn-nuevo").addEventListener("click", abrirNuevo);
+    document.getElementById("btn-importar").addEventListener("click", abrirImportar);
+    document.getElementById("btn-subir").addEventListener("click", importar);
+    document.getElementById("form-importar").addEventListener("submit", (e) => {
+        e.preventDefault();
+        importar();
+    });
     document.getElementById("buscador").addEventListener("input", filtrar);
     document.getElementById("btn-guardar").addEventListener("click", guardar);
     document.getElementById("form-producto").addEventListener("submit", (e) => {
@@ -151,6 +162,68 @@ async function guardar() {
         const alerta = document.getElementById("error-form");
         alerta.textContent = e.message;
         alerta.classList.remove("d-none");
+    }
+}
+
+function abrirImportar() {
+    document.getElementById("form-importar").reset();
+    document.getElementById("error-importar").classList.add("d-none");
+    document.getElementById("resultado-importar").innerHTML = "";
+    modalImportar.show();
+}
+
+function errorImportar(mensaje) {
+    const alerta = document.getElementById("error-importar");
+    alerta.textContent = mensaje;
+    alerta.classList.toggle("d-none", !mensaje);
+}
+
+function validarArchivo(archivo) {
+    if (!archivo) return "Selecciona un archivo.";
+    const nombre = archivo.name.toLowerCase();
+    if (!EXTENSIONES_IMPORTACION.some((ext) => nombre.endsWith(ext))) return "El archivo debe ser .csv o .json.";
+    if (archivo.size > TAMANO_MAXIMO_IMPORTACION) return "El archivo supera el límite de 2 MB.";
+    return null;
+}
+
+function pintarResultado({ importados, rechazados, errores }) {
+    const resumen = `
+        <div class="alert ${importados ? "alert-success" : "alert-warning"} mb-3">
+            <i class="bi ${importados ? "bi-check-circle" : "bi-exclamation-triangle"} me-1"></i>
+            <strong>${importados}</strong> producto(s) importado(s) y <strong>${rechazados}</strong> fila(s) rechazada(s).
+        </div>`;
+    const detalle = errores.length ? `
+        <div class="table-responsive" style="max-height: 260px;">
+            <table class="table table-sm align-middle mb-0">
+                <thead class="table-light"><tr><th style="width: 80px;">Fila</th><th>Motivo</th></tr></thead>
+                <tbody>${errores.map((e) => `
+                    <tr><td class="text-muted">${e.fila}</td><td>${escapar(e.error)}</td></tr>`).join("")}
+                </tbody>
+            </table>
+        </div>` : "";
+    document.getElementById("resultado-importar").innerHTML = resumen + detalle;
+}
+
+async function importar() {
+    const archivo = document.getElementById("campo-archivo").files[0];
+    const error = validarArchivo(archivo);
+    errorImportar(error);
+    if (error) return;
+
+    const boton = document.getElementById("btn-subir");
+    document.getElementById("resultado-importar").innerHTML = "";
+    cargando(boton, true, "Importando…");
+    try {
+        const resultado = await InventarioAPI.importar(archivo);
+        pintarResultado(resultado);
+        if (resultado.importados) {
+            notificar(`${resultado.importados} producto(s) importado(s).`);
+            await cargar();
+        }
+    } catch (e) {
+        errorImportar(e.message);
+    } finally {
+        cargando(boton, false);
     }
 }
 

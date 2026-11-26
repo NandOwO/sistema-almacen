@@ -1,5 +1,6 @@
 import { ReportesAPI } from "../../api/inventario_api.js";
-import { escapar, notificar, pintarTarjetas, graficoBarras, descargarArchivo } from "../../utils/helpers.js";
+import { escapar, notificar, pintarTarjetas, graficoBarras } from "../../utils/helpers.js";
+import { conectarExportacion } from "../../utils/exportacion.js";
 
 let filas = [];
 let grafico = null;
@@ -11,10 +12,7 @@ export async function init() {
 
     ["f-buscar", "f-categoria", "f-solo"].forEach((id) =>
         document.getElementById(id).addEventListener("input", aplicar));
-    document.getElementById("btn-excel").addEventListener("click", () =>
-        descargarArchivo(ReportesAPI.urlExportar("reposicion", "excel", parametros())));
-    document.getElementById("btn-pdf").addEventListener("click", () =>
-        descargarArchivo(ReportesAPI.urlExportar("reposicion", "pdf", parametros())));
+    conectarExportacion("reposicion", parametros);
 
     await cargar();
 }

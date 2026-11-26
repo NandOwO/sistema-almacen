@@ -36,12 +36,44 @@ export function pintarTarjetas(idContenedor, lista) {
     if (cont) cont.innerHTML = tarjetas(lista);
 }
 
-export function descargarArchivo(url) {
-    const enlace = document.createElement("a");
-    enlace.href = url;
-    document.body.appendChild(enlace);
-    enlace.click();
-    enlace.remove();
+export function cargando(boton, activo, texto = "Procesando…") {
+    if (!boton) return;
+    if (activo) {
+        boton.dataset.contenido = boton.innerHTML;
+        boton.disabled = true;
+        boton.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status"></span>${escapar(texto)}`;
+    } else {
+        boton.disabled = false;
+        if (boton.dataset.contenido) boton.innerHTML = boton.dataset.contenido;
+    }
+}
+
+function nombreDeArchivo(cabecera) {
+    const coincidencia = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(cabecera || "");
+    return coincidencia ? decodeURIComponent(coincidencia[1]) : "reporte";
+}
+
+export async function descargarArchivo(url, boton) {
+    cargando(boton, true, "Generando…");
+    try {
+        const respuesta = await fetch(url, { credentials: "same-origin" });
+        if (!respuesta.ok) {
+            const datos = await respuesta.json().catch(() => ({}));
+            throw new Error(datos.error || "No se pudo generar el archivo.");
+        }
+        const blob = await respuesta.blob();
+        const enlace = document.createElement("a");
+        enlace.href = URL.createObjectURL(blob);
+        enlace.download = nombreDeArchivo(respuesta.headers.get("Content-Disposition"));
+        document.body.appendChild(enlace);
+        enlace.click();
+        enlace.remove();
+        setTimeout(() => URL.revokeObjectURL(enlace.href), 1000);
+    } catch (e) {
+        notificar(e.message, "danger");
+    } finally {
+        cargando(boton, false);
+    }
 }
 
 export const PALETA_GRAFICO =
