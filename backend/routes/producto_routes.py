@@ -21,6 +21,11 @@ def listar():
 def crear():
     return controller.crear(request.get_json(silent=True) or {})
 
+@producto_bp.route("/importar", methods=["POST"])
+@requiere_modulo("productos")
+def importar():
+    return controller.importar(request.files.get("archivo"))
+
 @producto_bp.route("/<int:id>", methods=["PUT"])
 @requiere_modulo("productos")
 def actualizar(id):

@@ -1,17 +1,50 @@
-from functools import reduce
-from math import ceil
 from datetime import date
+from functools import reduce
 
+import numpy as np
 import pandas as pd
+
+DIAS_CRITICO = 7
+DIAS_ATENCION = 15
+
+
+def _registros(df):
+    """Convierte un DataFrame en registros JSON nativos, con None en lugar de NaN."""
+    return df.astype(object).where(df.notna(), None).to_dict(orient="records")
+
+
+def _df_productos(productos, columnas=None):
+    df = pd.DataFrame([p.to_dict() for p in productos])
+    if "fecha_vencimiento" not in df:
+        df["fecha_vencimiento"] = None
+    return df[columnas] if columnas else df
+
+
+def _df_movimientos(movimientos):
+    return pd.DataFrame(
+        [{
+            "id_producto": m.id_producto,
+            "tipo_movimiento": m.tipo_movimiento,
+            "cantidad": m.cantidad,
+            "subtotal": float(m.subtotal or 0),
+            "proveedor": m.proveedor_nombre or "—",
+            "fecha": m.fecha,
+        } for m in movimientos],
+        columns=["id_producto", "tipo_movimiento", "cantidad", "subtotal", "proveedor", "fecha"],
+    )
+
 
 def valor_total_inventario(productos):
     return round(reduce(lambda acc, p: acc + p.valor_total, productos, 0.0), 2)
 
+
 def unidades_totales(productos):
     return reduce(lambda acc, p: acc + p.cantidad, productos, 0)
 
+
 def productos_bajo_stock(productos):
     return list(filter(lambda p: p.necesita_reposicion, productos))
+
 
 def valor_por_categoria(productos):
     return reduce(
@@ -23,10 +56,12 @@ def valor_por_categoria(productos):
         {},
     )
 
+
 def conteo_por_categoria(productos):
     return reduce(
         lambda acc, p: {**acc, p.categoria: acc.get(p.categoria, 0) + 1}, productos, {}
     )
+
 
 def generar_resumen(productos):
     bajo_stock = productos_bajo_stock(productos)
@@ -43,11 +78,13 @@ def generar_resumen(productos):
         "por_vencer": venc["por_vencer"],
     }
 
+
 def analisis_pandas(productos):
+    """Agrega el inventario por categoría y obtiene los productos de mayor valor."""
     if not productos:
         return {"por_categoria": [], "top_productos": [], "totales": {}}
 
-    df = pd.DataFrame([p.to_dict() for p in productos])
+    df = _df_productos(productos)
 
     por_categoria = (
         df.groupby("categoria")
@@ -62,9 +99,7 @@ def analisis_pandas(productos):
         .sort_values("valor", ascending=False)
     )
 
-    top = df.sort_values("valor_total", ascending=False).head(5)[
-        ["nombre", "categoria", "valor_total"]
-    ]
+    top = df.nlargest(5, "valor_total", keep="first")[["nombre", "categoria", "valor_total"]]
 
     totales = {
         "valor_total": round(float(df["valor_total"].sum()), 2),
@@ -72,10 +107,11 @@ def analisis_pandas(productos):
         "productos": int(len(df)),
     }
     return {
-        "por_categoria": por_categoria.to_dict(orient="records"),
-        "top_productos": top.to_dict(orient="records"),
+        "por_categoria": _registros(por_categoria),
+        "top_productos": _registros(top),
         "totales": totales,
     }
+
 
 def _suma(movimientos, condicion, campo):
     return reduce(
@@ -83,8 +119,11 @@ def _suma(movimientos, condicion, campo):
         movimientos, 0,
     )
 
+
 def resumen_movimientos(movimientos):
-    es = lambda t: (lambda m: m.tipo_movimiento == t)
+    def es(tipo):
+        return lambda m: m.tipo_movimiento == tipo
+
     entradas = list(filter(es("ENTRADA"), movimientos))
     salidas = list(filter(es("SALIDA"), movimientos))
     ajustes = list(filter(es("AJUSTE"), movimientos))
@@ -101,167 +140,150 @@ def resumen_movimientos(movimientos):
         "valor_comprado": valor_comprado,
     }
 
+
 def compras_por_proveedor(movimientos):
+    """Totaliza las entradas por proveedor con una agregación de pandas."""
     entradas = [m for m in movimientos if m.tipo_movimiento == "ENTRADA"]
     if not entradas:
         return {"por_proveedor": [], "resumen": resumen_movimientos([])}
 
-    df = pd.DataFrame([{
-        "proveedor": m.proveedor_nombre or "—",
-        "movimientos": 1,
-        "unidades": m.cantidad,
-        "total": float(m.subtotal or 0),
-    } for m in entradas])
-
     por_proveedor = (
-        df.groupby("proveedor")
-        .agg(movimientos=("movimientos", "sum"),
-             unidades=("unidades", "sum"),
-             total=("total", "sum"))
+        _df_movimientos(entradas)
+        .groupby("proveedor")
+        .agg(movimientos=("id_producto", "size"),
+             unidades=("cantidad", "sum"),
+             total=("subtotal", "sum"))
         .round(2)
         .reset_index()
         .sort_values("total", ascending=False)
     )
     return {
-        "por_proveedor": por_proveedor.to_dict(orient="records"),
+        "por_proveedor": _registros(por_proveedor),
         "resumen": resumen_movimientos(entradas),
     }
 
+
+def detalle_bajo_stock(productos):
+    """Productos en o bajo su stock mínimo, con las unidades que faltan."""
+    if not productos:
+        return []
+    df = _df_productos(productos)
+    bajo = df[df["cantidad"] <= df["stock_minimo"]].copy()
+    bajo["faltante"] = np.maximum(0, bajo["stock_minimo"] - bajo["cantidad"])
+    return _registros(bajo)
+
+
 def resumen_bajo_stock(productos):
-    bajo = [p for p in productos if p.necesita_reposicion]
-    sin_stock = [p for p in bajo if p.cantidad == 0]
-    faltante = reduce(
-        lambda acc, p: acc + max(0, p.stock_minimo - p.cantidad), bajo, 0
-    )
+    if not productos:
+        return {"total_productos": 0, "bajo_stock": 0, "sin_stock": 0, "unidades_faltantes": 0}
+
+    cantidad = np.array([p.cantidad for p in productos])
+    minimo = np.array([p.stock_minimo for p in productos])
+    bajo = cantidad <= minimo
     return {
         "total_productos": len(productos),
-        "bajo_stock": len(bajo),
-        "sin_stock": len(sin_stock),
-        "unidades_faltantes": faltante,
+        "bajo_stock": int(bajo.sum()),
+        "sin_stock": int((bajo & (cantidad == 0)).sum()),
+        "unidades_faltantes": int(np.maximum(0, minimo - cantidad)[bajo].sum()),
     }
 
-def _urgencia(cantidad, consumo_diario, dias_restantes):
-    if cantidad == 0:
-        return "SIN STOCK"
-    if consumo_diario == 0:
-        return "SIN CONSUMO"
-    if dias_restantes <= 7:
-        return "CRÍTICO"
-    if dias_restantes <= 15:
-        return "ATENCIÓN"
-    return "OK"
 
 def prediccion_reposicion(productos, salidas, ventana_dias=30, cobertura_dias=30):
+    """Estima consumo diario, días hasta agotarse y cantidad sugerida de compra."""
     ventana_dias = max(1, int(ventana_dias))
+    resumen_vacio = {
+        "productos": 0, "por_agotarse": 0, "en_atencion": 0,
+        "sin_consumo": 0, "unidades_comprar": 0,
+    }
+    if not productos:
+        return {"productos": [], "resumen": resumen_vacio}
 
-    consumo = reduce(
-        lambda acc, m: {**acc, m.id_producto: acc.get(m.id_producto, 0) + m.cantidad},
-        salidas, {},
+    df = _df_productos(productos, ["id", "nombre", "categoria", "cantidad", "stock_minimo"])
+    consumo = _df_movimientos(salidas).groupby("id_producto")["cantidad"].sum()
+
+    vendidas = df["id"].map(consumo).fillna(0).to_numpy(dtype=float)
+    cantidad = df["cantidad"].to_numpy(dtype=float)
+    minimo = df["stock_minimo"].to_numpy(dtype=float)
+
+    diario = np.round(vendidas / ventana_dias, 2)
+    con_consumo = diario > 0
+    dias = np.where(con_consumo, np.floor(cantidad / np.where(con_consumo, diario, 1)), np.nan)
+    sugerido = np.where(
+        con_consumo,
+        np.maximum(0, np.ceil(diario * cobertura_dias - cantidad)),
+        np.maximum(0, minimo - cantidad),
+    )
+    urgencia = np.select(
+        [cantidad == 0, ~con_consumo, dias <= DIAS_CRITICO, dias <= DIAS_ATENCION],
+        ["SIN STOCK", "SIN CONSUMO", "CRÍTICO", "ATENCIÓN"],
+        default="OK",
     )
 
-    filas = []
-    for p in productos:
-        vendidas = consumo.get(p.id, 0)
-        diario = round(vendidas / ventana_dias, 2)
-        dias_restantes = int(p.cantidad / diario) if diario > 0 else None
-        if diario > 0:
-            sugerido = max(0, ceil(diario * cobertura_dias - p.cantidad))
-        else:
-            sugerido = max(0, p.stock_minimo - p.cantidad)
-        filas.append({
-            "id": p.id,
-            "nombre": p.nombre,
-            "categoria": p.categoria,
-            "cantidad": p.cantidad,
-            "stock_minimo": p.stock_minimo,
-            "consumo_diario": diario,
-            "dias_restantes": dias_restantes,
-            "sugerido": sugerido,
-            "urgencia": _urgencia(p.cantidad, diario, dias_restantes),
-        })
+    df["consumo_diario"] = diario
+    df["dias_restantes"] = pd.array(dias, dtype="Int64")
+    df["sugerido"] = sugerido.astype(int)
+    df["urgencia"] = urgencia
+    df = df.sort_values("dias_restantes", na_position="last", kind="stable")
 
-    filas.sort(key=lambda f: (f["dias_restantes"] is None,
-                              f["dias_restantes"] if f["dias_restantes"] is not None else 0))
-
-    por_agotarse = [f for f in filas if f["dias_restantes"] is not None and f["dias_restantes"] <= 7]
-    atencion = [f for f in filas if f["dias_restantes"] is not None and 7 < f["dias_restantes"] <= 15]
-    sin_consumo = [f for f in filas if f["consumo_diario"] == 0]
+    con_dias = ~np.isnan(dias)
     return {
-        "productos": filas,
+        "productos": _registros(df),
         "resumen": {
-            "productos": len(filas),
-            "por_agotarse": len(por_agotarse),
-            "en_atencion": len(atencion),
-            "sin_consumo": len(sin_consumo),
-            "unidades_comprar": sum(f["sugerido"] for f in filas),
+            "productos": len(df),
+            "por_agotarse": int((con_dias & (dias <= DIAS_CRITICO)).sum()),
+            "en_atencion": int((con_dias & (dias > DIAS_CRITICO) & (dias <= DIAS_ATENCION)).sum()),
+            "sin_consumo": int((~con_consumo).sum()),
+            "unidades_comprar": int(sugerido.sum()),
         },
     }
 
-def movimientos_por_mes(movimientos, meses=6):
-    hoy = date.today()
-    etiquetas = []
-    anio, mes = hoy.year, hoy.month
-    for _ in range(meses):
-        etiquetas.append(f"{anio:04d}-{mes:02d}")
-        mes -= 1
-        if mes == 0:
-            mes, anio = 12, anio - 1
-    etiquetas.reverse()
 
-    entradas = {e: 0 for e in etiquetas}
-    salidas = {e: 0 for e in etiquetas}
-    for m in movimientos:
-        clave = m.fecha.strftime("%Y-%m") if hasattr(m.fecha, "strftime") else str(m.fecha)[:7]
-        if clave in entradas:
-            if m.tipo_movimiento == "ENTRADA":
-                entradas[clave] += m.cantidad
-            elif m.tipo_movimiento == "SALIDA":
-                salidas[clave] += m.cantidad
+def movimientos_por_mes(movimientos, meses=6):
+    """Unidades de entrada y salida de los últimos meses, agrupadas por mes."""
+    periodos = pd.period_range(end=pd.Period(date.today(), freq="M"), periods=meses, freq="M")
+    etiquetas = list(periodos.strftime("%Y-%m"))
+
+    df = _df_movimientos(movimientos)
+    df["mes"] = pd.to_datetime(df["fecha"], errors="coerce").dt.strftime("%Y-%m")
+    tabla = (
+        df[df["tipo_movimiento"].isin(["ENTRADA", "SALIDA"])]
+        .pivot_table(index="mes", columns="tipo_movimiento", values="cantidad",
+                     aggfunc="sum", fill_value=0)
+        .reindex(index=etiquetas, columns=["ENTRADA", "SALIDA"], fill_value=0)
+        .fillna(0)
+        .astype(int)
+    )
     return {
         "meses": etiquetas,
-        "entradas": [entradas[e] for e in etiquetas],
-        "salidas": [salidas[e] for e in etiquetas],
+        "entradas": tabla["ENTRADA"].tolist(),
+        "salidas": tabla["SALIDA"].tolist(),
     }
 
-def _estado_vencimiento(dias, dias_alerta):
-    if dias < 0:
-        return "VENCIDO"
-    if dias <= dias_alerta:
-        return "POR VENCER"
-    return "VIGENTE"
 
 def reporte_vencimientos(productos, dias_alerta=30):
-    hoy = date.today()
-    filas = []
-    for p in productos:
-        fecha = getattr(p, "fecha_vencimiento", None)
-        if not fecha:
-            continue
-        try:
-            dias = (date.fromisoformat(fecha) - hoy).days
-        except (ValueError, TypeError):
-            continue
-        filas.append({
-            "id": p.id,
-            "nombre": p.nombre,
-            "categoria": p.categoria,
-            "cantidad": p.cantidad,
-            "fecha_vencimiento": fecha,
-            "dias_restantes": dias,
-            "estado_venc": _estado_vencimiento(dias, dias_alerta),
-        })
+    """Clasifica los perecederos en vencidos, por vencer y vigentes."""
+    columnas = ["id", "nombre", "categoria", "cantidad", "fecha_vencimiento"]
+    df = _df_productos(productos, columnas) if productos else pd.DataFrame(columns=columnas)
 
-    filas.sort(key=lambda f: f["dias_restantes"])
-    vencidos = [f for f in filas if f["estado_venc"] == "VENCIDO"]
-    por_vencer = [f for f in filas if f["estado_venc"] == "POR VENCER"]
-    vigentes = [f for f in filas if f["estado_venc"] == "VIGENTE"]
+    fechas = pd.to_datetime(df["fecha_vencimiento"], format="%Y-%m-%d", errors="coerce")
+    df = df[fechas.notna()].copy()
+    df["dias_restantes"] = (fechas[fechas.notna()] - pd.Timestamp(date.today())).dt.days.astype(int)
+    df["estado_venc"] = np.select(
+        [df["dias_restantes"] < 0, df["dias_restantes"] <= dias_alerta],
+        ["VENCIDO", "POR VENCER"],
+        default="VIGENTE",
+    )
+    df = df.sort_values("dias_restantes", kind="stable")
+
+    conteo = df["estado_venc"].value_counts()
+    en_riesgo = df["estado_venc"] != "VIGENTE"
     return {
-        "productos": filas,
+        "productos": _registros(df),
         "resumen": {
-            "perecederos": len(filas),
-            "vencidos": len(vencidos),
-            "por_vencer": len(por_vencer),
-            "vigentes": len(vigentes),
-            "unidades_riesgo": sum(f["cantidad"] for f in vencidos + por_vencer),
+            "perecederos": len(df),
+            "vencidos": int(conteo.get("VENCIDO", 0)),
+            "por_vencer": int(conteo.get("POR VENCER", 0)),
+            "vigentes": int(conteo.get("VIGENTE", 0)),
+            "unidades_riesgo": int(df.loc[en_riesgo, "cantidad"].sum()),
         },
     }

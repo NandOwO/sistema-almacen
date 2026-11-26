@@ -148,12 +148,7 @@ class ReporteController:
             ]
         if reporte == "bajo-stock":
             productos = self.inventario.listar_productos(solo_activos=True)
-            bajos = []
-            for p in productos:
-                if p.necesita_reposicion:
-                    fila = p.to_dict()
-                    fila["faltante"] = max(0, p.stock_minimo - p.cantidad)
-                    bajos.append(fila)
+            bajos = reportes_service.detalle_bajo_stock(productos)
             return "Reporte de productos bajo stock", [
                 ("Productos bajo stock", _df(bajos, "bajo_stock")),
             ]

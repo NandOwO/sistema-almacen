@@ -1,4 +1,5 @@
 import io
+import json
 from abc import ABC, abstractmethod
 
 import pandas as pd
@@ -8,6 +9,7 @@ from openpyxl.utils import get_column_letter
 ANCHO_MINIMO_COLUMNA = 8
 ANCHO_MAXIMO_COLUMNA = 40
 LARGO_MAXIMO_CELDA_PDF = 22
+SALTO_LINEA = "\n"
 
 
 class EstrategiaExportacion(ABC):
@@ -38,7 +40,8 @@ class ExportacionExcel(EstrategiaExportacion):
     @staticmethod
     def _ajustar_anchos(hoja, df):
         for i, columna in enumerate(df.columns, start=1):
-            largo = max([len(str(columna)), ANCHO_MINIMO_COLUMNA] + [len(str(v)) for v in df[columna]])
+            largo_valores = df[columna].astype(str).str.len().max() if len(df) else 0
+            largo = max(len(str(columna)), ANCHO_MINIMO_COLUMNA, int(largo_valores))
             hoja.column_dimensions[get_column_letter(i)].width = min(largo + 3, ANCHO_MAXIMO_COLUMNA)
 
 
@@ -93,9 +96,44 @@ class ExportacionPDF(EstrategiaExportacion):
             pdf.cell(ancho, 7, self._latin1(col)[:LARGO_MAXIMO_CELDA_PDF], border=1, fill=True)
         pdf.ln()
 
+        celdas = (
+            df.astype(object)
+            .where(df.notna(), None)
+            .map(lambda v: self._latin1(self._formato_celda(v))[:LARGO_MAXIMO_CELDA_PDF])
+        )
         pdf.set_font("Helvetica", "", 8)
-        for _, fila in df.iterrows():
-            for col in columnas:
-                texto = self._latin1(self._formato_celda(fila[col]))[:LARGO_MAXIMO_CELDA_PDF]
+        for fila in celdas.to_numpy().tolist():
+            for texto in fila:
                 pdf.cell(ancho, 6, texto, border=1)
             pdf.ln()
+
+
+class ExportacionCSV(EstrategiaExportacion):
+    extension = "csv"
+    tipo_mime = "text/csv"
+
+    def exportar(self, titulo, tablas):
+        texto = io.StringIO()
+        for i, (subtitulo, df) in enumerate(tablas):
+            if i:
+                texto.write(SALTO_LINEA)
+            if len(tablas) > 1:
+                texto.write(f"# {subtitulo}{SALTO_LINEA}")
+            df.to_csv(texto, index=False, lineterminator=SALTO_LINEA)
+        return io.BytesIO(texto.getvalue().encode("utf-8-sig"))
+
+
+class ExportacionJSON(EstrategiaExportacion):
+    extension = "json"
+    tipo_mime = "application/json"
+
+    def exportar(self, titulo, tablas):
+        documento = {
+            "titulo": titulo,
+            "tablas": {
+                subtitulo: json.loads(df.to_json(orient="records", force_ascii=False, date_format="iso"))
+                for subtitulo, df in tablas
+            },
+        }
+        contenido = json.dumps(documento, ensure_ascii=False, indent=2)
+        return io.BytesIO(contenido.encode("utf-8"))

@@ -18,6 +18,8 @@ def _cargar_env():
 
 _cargar_env()
 
+TAMANO_MAXIMO_ARCHIVO = 2 * 1024 * 1024
+
 PUERTO = int(os.environ.get("PUERTO", 5000))
 
 SECRET_KEY = os.environ.get("SECRET_KEY", "clave-solo-para-desarrollo-cambiar")
