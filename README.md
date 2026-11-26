@@ -97,13 +97,56 @@ La carpeta `data/` incluye `productos_ejemplo.csv`, `productos_ejemplo.json` y `
 ## Pruebas y calidad
 
 ```powershell
-pytest            # 152 pruebas: modelos, patrones, servicios, reportes, importación, validadores y API
+pytest            # 165 pruebas: modelos, patrones, servicios, roles, reportes, importación, validadores y API
 pytest -v         # con el nombre de cada prueba
 pip install flake8
 flake8            # revisión PEP 8 con la configuración de .flake8
 ```
 
 Las pruebas reemplazan los repositorios por versiones en memoria, así que se ejecutan sin base de datos.
+
+## Guía para probar el sistema
+
+Recorrido sugerido después de instalar, con lo que debería ocurrir en cada paso. Los datos de ejemplo se cargan solos la primera vez que arranca el servidor.
+
+### 1. Acceso
+1. Abrir http://localhost:5000 e ingresar con una clave incorrecta: aparece *"Usuario o clave incorrectos"*.
+2. Ingresar con `admin` / `admin123`: se abre el **Dashboard** con indicadores, gráficos y alertas de bajo stock y vencimiento.
+
+### 2. Catálogo
+1. **Productos → Nuevo producto**: crear uno con cantidad negativa. El formulario lo impide con un mensaje.
+2. Crear un producto válido: aparece en la tabla y se actualizan las tarjetas de resumen.
+3. Crear un producto con fecha de vencimiento: queda como **perecedero**.
+4. Editar, desactivar y eliminar un producto: el eliminado deja de verse, pero su historial se conserva (eliminación lógica).
+
+### 3. Movimientos de inventario
+1. **Inventario**: registrar una **entrada**. Exige proveedor, N° de documento y precio de compra, y el stock aumenta.
+2. Registrar una **salida por venta**: exige N° de documento y el stock disminuye.
+3. Intentar una salida mayor al stock: se rechaza con *"No hay stock suficiente"*.
+4. Revisar el **kardex** del producto: muestra stock anterior y stock nuevo de cada movimiento.
+
+### 4. Importación masiva
+1. **Productos → Importar** con `data/productos_ejemplo.csv`: se importan **15** productos.
+2. Importar `data/productos_ejemplo.json`: se importan **7**.
+3. Importar `data/productos_con_errores.csv`: **2** importados y **8** rechazados, con la fila y el motivo de cada rechazo (nombre vacío, cantidad negativa, precio no numérico, fecha pasada, categoría inexistente, repetido en el archivo y ya existente).
+4. Volver a importar `productos_ejemplo.csv`: los 15 se rechazan por estar ya registrados.
+5. Elegir un archivo `.txt` o `.xlsx`: se rechaza antes de subirlo.
+
+### 5. Reportes y exportación
+1. Abrir cada uno de los 6 reportes: **valorizado**, **movimientos**, **reposición**, **vencimientos**, **bajo stock** y **compras por proveedor**.
+2. En **Reposición**, cambiar la ventana de días: se recalculan el consumo diario, los días restantes, la cantidad sugerida y la urgencia.
+3. En cualquier reporte, **Exportar** en Excel, PDF, CSV y JSON: se descarga el archivo y respeta los filtros aplicados.
+
+### 6. Usuarios, perfiles y permisos
+1. **Perfiles**: el perfil **Administrador** aparece con la insignia *Sistema* y sin botones de edición. No se puede modificar, desactivar ni eliminar.
+2. Crear un perfil **Vendedor** solo con los módulos *Dashboard*, *Productos* e *Inventario*.
+3. **Usuarios**: crear un usuario con el perfil Vendedor, cerrar sesión e ingresar con él: el menú muestra solo esos tres módulos.
+4. Como `admin`, editar ese usuario y asignarle el perfil **Administrador**: el sistema pide confirmar que tendrá acceso a todo el sistema. Al cancelar, no se guarda nada.
+5. Intentar quitarle el rol Administrador a `admin` cuando es el único administrador: se rechaza para que el sistema no quede sin administrador.
+6. Intentar desactivar o eliminar el propio usuario: se rechaza.
+
+### 7. Pruebas automáticas
+Desde la raíz del proyecto ejecutar `pytest`: deben pasar las **165** pruebas, sin necesidad de MySQL.
 
 ## Estructura del proyecto
 

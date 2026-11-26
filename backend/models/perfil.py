@@ -1,6 +1,8 @@
 import validadores
 from models.base import ModeloBase
 
+NOMBRE_PERFIL_ADMIN = "Administrador"
+
 
 class Perfil(ModeloBase):
     """Rol de usuario con la lista de módulos que puede usar."""
@@ -13,6 +15,11 @@ class Perfil(ModeloBase):
 
         self.modulos = [int(m) for m in (modulos or [])]
         self.validar()
+
+    @property
+    def es_sistema(self):
+        """True si es el perfil Administrador, que el sistema protege de cambios."""
+        return (self.nombre or "").lower() == NOMBRE_PERFIL_ADMIN.lower()
 
     def validar(self):
         """Valida y normaliza los campos del perfil."""
@@ -29,6 +36,7 @@ class Perfil(ModeloBase):
             "descripcion": self.descripcion,
             "estado": self.estado,
             "modulos": self.modulos,
+            "es_sistema": self.es_sistema,
         }
 
 

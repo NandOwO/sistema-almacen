@@ -3,22 +3,22 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from models.usuario import crear_usuario
 from repositories.usuario_repository import UsuarioRepository
 from repositories.perfil_repository import PerfilRepository
-from repositories.modulo_repository import ModuloRepository
 from exceptions.errores import (
     UsuarioNoEncontradoError, DatosInvalidosError, CredencialesInvalidasError,
 )
 
 LONGITUD_MINIMA_CLAVE = 4
-RUTAS_ADMIN = ("usuarios", "perfiles")
+MENSAJE_CONFIRMAR_ADMIN = (
+    "Asignar el rol Administrador da acceso a todo el sistema: confirme la operación."
+)
 
 
 class UsuarioService:
     """Reglas de negocio de usuarios."""
 
-    def __init__(self, repositorio=None, perfil_repo=None, modulo_repo=None):
+    def __init__(self, repositorio=None, perfil_repo=None):
         self.repositorio = repositorio or UsuarioRepository()
         self.perfil_repo = perfil_repo or PerfilRepository()
-        self.modulo_repo = modulo_repo or ModuloRepository()
 
     def listar_usuarios(self, solo_activos=False):
         """Lista los usuarios; con solo_activos=True, solo los activos."""
@@ -35,18 +35,21 @@ class UsuarioService:
         """Valida los datos y registra un usuario nuevo."""
         usuario = crear_usuario(dict(datos))
         self._validar_perfil(usuario.id_perfil)
+        self._exigir_confirmacion_admin(usuario.id_perfil, None, datos)
         clave = self._validar_clave(datos.get("clave"), obligatoria=True)
         if self.repositorio.buscar_por_usuario(usuario.usuario):
             raise DatosInvalidosError("Ya existe un usuario con ese nombre.")
         return self.repositorio.agregar(usuario, generate_password_hash(clave))
 
     def actualizar_usuario(self, id_usuario, datos):
-        """Valida los datos y actualiza el usuario existente."""
-        self.obtener_usuario(id_usuario)
+        """Valida los datos y actualiza el usuario; protege el rol Administrador."""
+        actual = self.obtener_usuario(id_usuario)
         datos = dict(datos)
         datos["id_usuario"] = id_usuario
         usuario = crear_usuario(datos)
         self._validar_perfil(usuario.id_perfil)
+        self._exigir_confirmacion_admin(usuario.id_perfil, actual.id_perfil, datos)
+        self._conservar_un_administrador(actual, usuario)
 
         existente = self.repositorio.buscar_por_usuario(usuario.usuario)
         if existente and existente.id_usuario != id_usuario:
@@ -84,10 +87,26 @@ class UsuarioService:
         if not id_perfil:
             return False
         perfil = self.perfil_repo.obtener(int(id_perfil))
-        if perfil is None:
-            return False
-        ids_admin = {m.id_modulo for m in self.modulo_repo.listar_todos() if m.ruta in RUTAS_ADMIN}
-        return any(mod in perfil.modulos for mod in ids_admin)
+        return perfil is not None and perfil.es_sistema
+
+    def _exigir_confirmacion_admin(self, id_perfil_nuevo, id_perfil_anterior, datos):
+        asigna_admin = (self._es_perfil_admin(id_perfil_nuevo)
+                        and not self._es_perfil_admin(id_perfil_anterior))
+        if asigna_admin and datos.get("confirmar_admin") is not True:
+            raise DatosInvalidosError(MENSAJE_CONFIRMAR_ADMIN)
+
+    def _conservar_un_administrador(self, actual, nuevo):
+        pierde_admin = self._es_perfil_admin(actual.id_perfil) and (
+            not self._es_perfil_admin(nuevo.id_perfil) or int(nuevo.estado) != 1
+        )
+        if not pierde_admin:
+            return
+        otros = [u for u in self.repositorio.listar(solo_activos=True)
+                 if u.id_usuario != actual.id_usuario and u.id_perfil == actual.id_perfil]
+        if not otros:
+            raise DatosInvalidosError(
+                "Es el único administrador activo: asigne el rol a otro usuario antes de cambiarlo."
+            )
 
     def actualizar_datos_propios(self, id_usuario, datos):
         """Actualiza nombre y correo sin permitir cambiar usuario ni perfil."""

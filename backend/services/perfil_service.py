@@ -4,7 +4,7 @@ from repositories.modulo_repository import ModuloRepository
 from exceptions.errores import PerfilNoEncontradoError, DatosInvalidosError
 
 RUTA_GESTION = "perfiles"
-RUTAS_ADMIN = ("usuarios", "perfiles")
+MENSAJE_PERFIL_SISTEMA = "El perfil Administrador es del sistema y no se puede {accion}."
 
 
 class PerfilService:
@@ -33,8 +33,9 @@ class PerfilService:
         return self.repositorio.agregar(perfil)
 
     def actualizar_perfil(self, id_perfil, datos):
-        """Valida los datos y actualiza el perfil existente."""
-        self.obtener_perfil(id_perfil)
+        """Valida los datos y actualiza el perfil; el perfil Administrador no se edita."""
+        if self.obtener_perfil(id_perfil).es_sistema:
+            raise DatosInvalidosError(MENSAJE_PERFIL_SISTEMA.format(accion="modificar"))
         datos = dict(datos)
         datos["id_perfil"] = id_perfil
         perfil = crear_perfil(datos)
@@ -53,19 +54,17 @@ class PerfilService:
         return self.repositorio.actualizar(perfil)
 
     def eliminar_perfil(self, id_perfil):
-        """Elimina el perfil, salvo que sea administrador."""
-        perfil = self.obtener_perfil(id_perfil)
-        if self._es_admin(perfil):
-            raise DatosInvalidosError("No puedes eliminar un perfil administrador.")
+        """Elimina el perfil, salvo el perfil Administrador."""
+        if self.obtener_perfil(id_perfil).es_sistema:
+            raise DatosInvalidosError(MENSAJE_PERFIL_SISTEMA.format(accion="eliminar"))
         self.repositorio.eliminar(id_perfil)
 
     def cambiar_estado_perfil(self, id_perfil, estado):
-        """Activa o desactiva el perfil; un administrador no se puede desactivar."""
+        """Activa o desactiva el perfil; el perfil Administrador no cambia de estado."""
         if int(estado) not in (0, 1):
             raise DatosInvalidosError("Estado inválido.")
-        perfil = self.obtener_perfil(id_perfil)
-        if int(estado) == 0 and self._es_admin(perfil):
-            raise DatosInvalidosError("No puedes desactivar un perfil administrador.")
+        if self.obtener_perfil(id_perfil).es_sistema:
+            raise DatosInvalidosError(MENSAJE_PERFIL_SISTEMA.format(accion="desactivar"))
         self.repositorio.cambiar_estado(id_perfil, estado)
 
     def _id_modulo_gestion(self):
@@ -79,7 +78,3 @@ class PerfilService:
             p.id_perfil != id_perfil and id_gestion in p.modulos
             for p in self.repositorio.listar(solo_activos=True)
         )
-
-    def _es_admin(self, perfil):
-        ids_admin = {m.id_modulo for m in self.modulo_repo.listar_todos() if m.ruta in RUTAS_ADMIN}
-        return any(mod in perfil.modulos for mod in ids_admin)

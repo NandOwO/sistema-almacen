@@ -60,7 +60,7 @@ async function cargarPerfiles() {
     try {
         perfiles = await PerfilesAPI.opciones();
         select.innerHTML = perfiles.map((p) =>
-            `<option value="${p.id_perfil}">${escapar(p.nombre)}</option>`).join("");
+            `<option value="${p.id_perfil}">${escapar(p.nombre)}${p.es_sistema ? " (acceso total)" : ""}</option>`).join("");
     } catch {
         perfiles = [];
         select.innerHTML = "";
@@ -145,6 +145,16 @@ async function guardar() {
     };
     if (clave) datos.clave = clave;
 
+    const anterior = usuarios.find((u) => u.id_usuario === Number(id));
+    if (esPerfilAdmin(datos.id_perfil) && !esPerfilAdmin(anterior?.id_perfil)) {
+        const confirmado = await confirmar(
+            "¿Asignar el rol Administrador?",
+            `Se asignará el rol de administración a "${datos.usuario}" y tendrá acceso a todo el sistema. ¿Confirmar operación?`,
+        );
+        if (!confirmado) return;
+        datos.confirmar_admin = true;
+    }
+
     try {
         if (id) {
             await UsuariosAPI.actualizar(Number(id), datos);
@@ -158,6 +168,10 @@ async function guardar() {
     } catch (e) {
         mostrarError(e.message);
     }
+}
+
+function esPerfilAdmin(idPerfil) {
+    return perfiles.some((p) => p.id_perfil === Number(idPerfil) && p.es_sistema);
 }
 
 function mostrarError(mensaje) {

@@ -2,6 +2,7 @@ import logging
 from datetime import date, timedelta
 
 from exceptions.errores import InventarioError
+from models.perfil import NOMBRE_PERFIL_ADMIN
 from repositories.database import get_connection
 from services.usuario_service import UsuarioService
 from services.categoria_service import CategoriaService
@@ -98,7 +99,7 @@ def _sembrar_perfil_usuario_y_menu():
         cursor = conn.cursor()
         cursor.execute(
             "INSERT INTO perfiles (nombre, descripcion) VALUES (%s, %s)",
-            ("Administrador", "Acceso total al sistema"),
+            (NOMBRE_PERFIL_ADMIN, "Acceso total al sistema"),
         )
         id_perfil = cursor.lastrowid
 
@@ -116,7 +117,7 @@ def _sembrar_perfil_usuario_y_menu():
         cursor.close()
         conn.close()
 
-    datos_admin = dict(USUARIO_ADMIN, id_perfil=id_perfil)
+    datos_admin = dict(USUARIO_ADMIN, id_perfil=id_perfil, confirmar_admin=True)
     UsuarioService().crear_usuario(datos_admin)
 
 

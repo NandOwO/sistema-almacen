@@ -74,12 +74,18 @@ function render(lista) {
     cuerpo.innerHTML = lista.map((p) => `
     <tr class="${p.estado === 0 ? "text-muted" : ""}">
       <td class="text-muted">${p.id_perfil}</td>
-      <td class="fw-medium">${escapar(p.nombre)}</td>
+      <td class="fw-medium">${escapar(p.nombre)}
+        ${p.es_sistema ? '<span class="badge text-bg-dark ms-1"><i class="bi bi-lock-fill me-1"></i>Sistema</span>' : ""}</td>
       <td class="text-muted">${escapar(p.descripcion || "—")}</td>
       <td class="text-center"><span class="badge text-bg-light">${p.modulos.length} módulo(s)</span></td>
       <td class="text-center">${badgeActivo(p.estado)}</td>
-      <td class="text-end text-nowrap">${botonesAccion(p.id_perfil, p.estado)}</td>
+      <td class="text-end text-nowrap">${p.es_sistema ? accionesBloqueadas() : botonesAccion(p.id_perfil, p.estado)}</td>
     </tr>`).join("");
+}
+
+function accionesBloqueadas() {
+    return `<span class="text-muted small" title="El perfil Administrador es del sistema y no se puede modificar">
+        <i class="bi bi-lock me-1"></i>No editable</span>`;
 }
 
 function pintarCheckboxes(seleccionados = []) {
@@ -111,6 +117,7 @@ function abrirNuevo() {
 
 function abrirEditar(id) {
     const p = perfiles.find((x) => x.id_perfil === id);
+    if (p.es_sistema) return notificar("El perfil Administrador es del sistema y no se puede modificar.", "warning");
     document.getElementById("perfil-id").value = p.id_perfil;
     document.getElementById("perfil-nombre").value = p.nombre;
     document.getElementById("perfil-descripcion").value = p.descripcion || "";

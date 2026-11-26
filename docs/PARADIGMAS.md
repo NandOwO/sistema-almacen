@@ -149,4 +149,4 @@ La prueba `test_coincide_con_el_calculo_fila_por_fila` compara la predicción ve
 | PEP 8 | Verificado con `flake8` (configuración en `.flake8`) |
 | try-except-finally | Sección 6 |
 | Docstrings | Clases, métodos y funciones públicas de `backend/` |
-| Pruebas unitarias | `tests/`: 152 pruebas con pytest |
+| Pruebas unitarias | `tests/`: 165 pruebas con pytest |
