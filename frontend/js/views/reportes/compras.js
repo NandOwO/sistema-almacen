@@ -1,5 +1,6 @@
 import { ReportesAPI, ProveedoresAPI } from "../../api/inventario_api.js";
-import { dinero, escapar, notificar, pintarTarjetas, graficoBarras, descargarArchivo } from "../../utils/helpers.js";
+import { dinero, escapar, notificar, pintarTarjetas, graficoBarras } from "../../utils/helpers.js";
+import { conectarExportacion } from "../../utils/exportacion.js";
 import { rangoFechas } from "../../utils/validaciones.js";
 
 let porProveedor = [];
@@ -10,10 +11,7 @@ export async function init() {
     document.getElementById("btn-limpiar").addEventListener("click", limpiar);
     document.getElementById("f-buscar").addEventListener("input", aplicarCliente);
     document.getElementById("f-orden").addEventListener("input", aplicarCliente);
-    document.getElementById("btn-excel").addEventListener("click", () =>
-        descargarArchivo(ReportesAPI.urlExportar("compras", "excel", filtros())));
-    document.getElementById("btn-pdf").addEventListener("click", () =>
-        descargarArchivo(ReportesAPI.urlExportar("compras", "pdf", filtros())));
+    conectarExportacion("compras", filtros);
 
     await Promise.all([llenarProveedores(), cargar()]);
 }

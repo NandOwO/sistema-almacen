@@ -1,5 +1,6 @@
 import { ReportesAPI } from "../../api/inventario_api.js";
-import { escapar, notificar, pintarTarjetas, graficoBarras, descargarArchivo } from "../../utils/helpers.js";
+import { escapar, notificar, pintarTarjetas, graficoBarras } from "../../utils/helpers.js";
+import { conectarExportacion } from "../../utils/exportacion.js";
 
 let productos = [];
 let grafico = null;
@@ -7,10 +8,7 @@ let grafico = null;
 export async function init() {
     ["f-buscar", "f-categoria", "f-orden", "f-min", "f-sinstock"].forEach((id) =>
         document.getElementById(id).addEventListener("input", aplicar));
-    document.getElementById("btn-excel").addEventListener("click", () =>
-        descargarArchivo(ReportesAPI.urlExportar("bajo-stock", "excel")));
-    document.getElementById("btn-pdf").addEventListener("click", () =>
-        descargarArchivo(ReportesAPI.urlExportar("bajo-stock", "pdf")));
+    conectarExportacion("bajo-stock");
 
     try {
         const datos = await ReportesAPI.bajoStock();
